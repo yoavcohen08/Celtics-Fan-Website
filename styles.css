@@ -1,0 +1,2147 @@
+:root {
+    --celtics-green: #007A33;
+    --celtics-gold: #BA9653;
+    --dark-green: #00542e;
+    --white: #ffffff;
+    --black: #000000;
+    --gray: #f5f5f5;
+    --dark-gray: #333333;
+    --celtics-dark-green: #006637;
+    --dark-bg: #151515;
+    --light-text: #f5f5f5;
+    --light-grey: #e0e0e0;
+    --overlay-bg: rgba(0, 0, 0, 0.7);
+    --overlay-light: rgba(255, 255, 255, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px; /* Ensures anchors account for fixed navbar */
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, var(--celtics-green), var(--dark-green));
+    color: var(--white);
+    line-height: 1.6;
+    min-height: 100vh;
+    position: relative;
+    padding-top: 0; /* Remove any existing padding */
+    margin: 0; /* Reset margin */
+}
+
+/* Layout and Sizing */
+.container, 
+.content,
+.section-container,
+.schedule-container,
+.game-grid,
+.news-grid,
+.stats-grid,
+.footer-content {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+}
+
+section {
+    padding: 80px 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Navigation */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 9999;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease-in-out;
+    width: 100%;
+    border-bottom: 1px solid rgba(186, 150, 83, 0.3);
+}
+
+.nav-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 80px;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 50px;
+    width: auto;
+    margin-right: 40px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: all 0.3s ease;
+}
+
+.nav-links {
+    display: flex;
+    gap: 0;
+    align-items: center;
+}
+
+.nav-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 18px;
+    padding: 30px 25px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.nav-link:after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: var(--celtics-gold);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--celtics-gold);
+    transform: translateY(-2px);
+}
+
+.nav-link:hover:after {
+    width: 60%;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 14px;
+}
+
+.btn-outline {
+    border: 1px solid var(--celtics-gold);
+    color: var(--celtics-gold);
+    background: transparent;
+}
+
+.btn-outline:hover {
+    background: var(--celtics-gold);
+    color: var(--black);
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    margin-left: 15px;
+}
+
+@media (max-width: 1024px) {
+    .nav-link {
+        padding: 30px 15px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+    
+    .nav-right {
+        display: none;
+    }
+    
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .nav-container {
+        height: 70px;
+    }
+    
+    .logo-img {
+        height: 40px;
+        margin-right: 0;
+    }
+}
+
+/* Updated Auth Navigation Styles */
+.auth-nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto;
+    padding-right: 10px;
+    height: 100%;
+}
+
+.auth-nav .welcome {
+    color: var(--celtics-gold);
+    font-weight: 500;
+    margin-right: 5px;
+    white-space: nowrap;
+}
+
+.auth-nav a {
+    color: var(--white);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.auth-nav a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.auth-nav .profile-btn {
+    background: rgba(186, 150, 83, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(186, 150, 83, 0.2);
+}
+
+.auth-nav .profile-btn:hover {
+    background: rgba(186, 150, 83, 0.2);
+    border-color: rgba(186, 150, 83, 0.3);
+}
+
+.auth-nav .profile-btn i {
+    font-size: 16px;
+    color: var(--celtics-gold);
+}
+
+.auth-nav .admin-btn {
+    background: rgba(0, 122, 51, 0.1);
+    color: var(--white);
+    border: 1px solid rgba(0, 122, 51, 0.3);
+    font-weight: 600;
+}
+
+.auth-nav .admin-btn:hover {
+    background: rgba(0, 122, 51, 0.2);
+}
+
+.auth-nav .logout-btn {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--white);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.auth-nav .logout-btn:hover {
+    background: rgba(220, 53, 69, 0.2);
+}
+
+@media (max-width: 992px) {
+    .nav-container {
+        flex-wrap: nowrap !important;
+        height: auto;
+        padding: 10px 20px;
+    }
+    
+    .auth-nav {
+        gap: 10px;
+        width: auto;
+        justify-content: flex-end;
+        white-space: nowrap;
+        padding-right: 0;
+    }
+    
+    .nav-left {
+        flex: 0 0 auto;
+    }
+    
+    .nav-links {
+        margin-left: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-container {
+        flex-wrap: wrap !important;
+        padding: 10px;
+    }
+    
+    .auth-nav {
+        margin-top: 0;
+        width: auto;
+        white-space: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-end;
+        padding-right: 0;
+    }
+    
+    .mobile-menu-btn {
+        order: 3;
+    }
+}
+
+/* Hero Section */
+.hero {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('images/home/hero.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    margin-top: 80px; /* This accounts for the navbar height */
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    padding: 2rem;
+}
+
+.hero-title {
+    font-size: 4.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.hero-subtitle {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    font-weight: 500;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 1.2rem 2.5rem;
+    background: var(--celtics-gold);
+    color: var(--black);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    background: #d4a74a;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.cta-button i {
+    margin-left: 8px;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.4rem;
+    }
+}
+
+/* Cards and Grids */
+.card,
+.game-card,
+.news-card,
+.stat-box {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.card {
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(186, 150, 83, 0.2);
+    height: 100%;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+.news-grid,
+.roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 2rem 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Forms */
+.form-container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 2.5rem;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(186, 150, 83, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--white);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(186, 150, 83, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--white);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--celtics-gold);
+    box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--celtics-gold);
+    color: var(--black);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    background: #d4a74a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(186, 150, 83, 0.2);
+}
+
+/* Messages */
+.message {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+.success-message {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.error-message {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+/* Header */
+header {
+    background: url('https://cdn.vox-cdn.com/thumbor/rRZtVCZZaJXB96JKWhdjJKVNiDI=/0x0:4745x3163/1200x800/filters:focal(2208x1163:2984x1939)/cdn.vox-cdn.com/uploads/chorus_image/image/72691020/usa_today_19568398.0.jpg') no-repeat center center/cover;
+    padding: 120px 20px 80px;
+    text-align: center;
+    position: relative;
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+header h1 {
+    font-size: 3.5em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* Content */
+.content {
+    max-width: 1200px;
+    margin: auto;
+    padding: 2rem;
+}
+
+.section-title {
+    font-size: 2.8rem;
+    color: var(--celtics-gold);
+    margin: 2rem 0;
+    text-align: center;
+    position: relative;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 100px;
+    height: 3px;
+    background: var(--celtics-gold);
+    margin: 1rem auto;
+    border-radius: 2px;
+}
+
+/* Footer Styles */
+.footer {
+    background: #1a1a1a;
+    color: var(--white);
+    padding: 3rem 0;
+    margin-top: 4rem;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 4rem;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 1.2fr 1fr;
+    gap: 4rem;
+    text-align: center;
+}
+
+.footer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+}
+
+.footer-logo {
+    height: 35px;
+    width: auto;
+    margin: 0 auto;
+}
+
+.footer-section h3 {
+    color: var(--white);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.footer-description {
+    color: #999;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: center;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.social-links {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.social-links a {
+    color: var(--white);
+    font-size: 1.1rem;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.social-links a:hover {
+    background: var(--celtics-gold);
+    color: var(--black);
+}
+
+.footer-section h4 {
+    color: var(--white);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.footer-links a {
+    color: var(--white);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--celtics-gold);
+}
+
+.contact-info {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.contact-info li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--white);
+    font-size: 1rem;
+    text-align: center;
+}
+
+.contact-info i {
+    color: var(--celtics-gold);
+    font-size: 1rem;
+    width: 20px;
+}
+
+.contact-info a {
+    color: var(--white);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.contact-info a:hover {
+    color: var(--celtics-gold);
+}
+
+.newsletter-form {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.newsletter-form input {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    background: #333;
+    color: var(--white);
+    font-size: 1rem;
+}
+
+.newsletter-form input::placeholder {
+    color: #999;
+}
+
+.newsletter-form button {
+    padding: 0.8rem 1.5rem;
+    background: var(--celtics-gold);
+    color: var(--black);
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.newsletter-form button:hover {
+    background: #d4a74a;
+}
+
+.footer-bottom {
+    border-top: 1px solid #333;
+    padding: 1rem 0;
+    margin-top: 2rem;
+}
+
+.footer-bottom-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.footer-legal {
+    display: flex;
+    gap: 2rem;
+}
+
+.footer-bottom p, .footer-legal a {
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.footer-legal a:hover {
+    color: var(--celtics-gold);
+}
+
+@media (max-width: 1200px) {
+    .footer-content {
+        padding: 0 2rem;
+        gap: 3rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 2rem;
+        padding: 0 2rem;
+    }
+    
+    .footer-section {
+        align-items: center;
+    }
+    
+    .social-links {
+        justify-content: center;
+    }
+    
+    .newsletter-form {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .news-grid,
+    .roster-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-container {
+        margin: 20px;
+        padding: 1.5rem;
+    }
+}
+
+/* Ticket Form Styles */
+.ticket-container {
+    max-width: 800px;
+    margin: 100px auto;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(186, 150, 83, 0.2);
+}
+
+.ticket-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.ticket-title {
+    color: var(--white);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.ticket-subtitle {
+    color: var(--celtics-gold);
+    font-size: 1.1rem;
+}
+
+.ticket-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-label {
+    color: var(--white);
+    font-size: 1rem;
+}
+
+.form-input,
+.form-select {
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(186, 150, 83, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--white);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23BA9653' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--celtics-gold);
+    box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.ticket-btn {
+    padding: 1rem;
+    background: var(--celtics-gold);
+    color: var(--black);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.ticket-btn:hover {
+    background: #d4a74a;
+    transform: translateY(-2px);
+}
+
+.ticket-info {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    color: var(--white);
+}
+
+.ticket-info h3 {
+    color: var(--celtics-gold);
+    margin-bottom: 1rem;
+}
+
+.ticket-info ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.ticket-info li {
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ticket-info i {
+    color: var(--celtics-gold);
+}
+
+.alert {
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert a {
+    color: #721c24;
+    text-decoration: underline;
+}
+
+.alert h3 {
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+/* Schedule Section */
+.schedule-container {
+    max-width: 1300px;
+    margin: 6rem auto 3rem;
+    padding: 0 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.schedule-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.schedule-title {
+    font-size: 3rem;
+    color: white;
+    margin-bottom: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    display: inline-block;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.schedule-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: var(--celtics-gold);
+    border-radius: 2px;
+}
+
+.schedule-subtitle {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin: 1.5rem auto;
+    max-width: 700px;
+    line-height: 1.6;
+}
+
+.schedule-filter {
+    margin: 2.5rem 0;
+    position: relative;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+}
+
+.filter-buttons button {
+    background-color: #222;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.filter-buttons button:hover {
+    background-color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    border-color: var(--celtics-gold);
+}
+
+.filter-buttons button.active {
+    background-color: var(--celtics-green);
+    color: white;
+    border-color: var(--celtics-green);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.month-container {
+    margin-bottom: 3.5rem;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.month-heading {
+    font-size: 2rem;
+    color: var(--celtics-gold);
+    padding-bottom: 0.7rem;
+    border-bottom: 2px solid rgba(255,255,255,0.05);
+    margin-bottom: 2rem;
+    position: relative;
+    font-weight: 700;
+}
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+    width: 100%;
+}
+
+.game-card {
+    background: linear-gradient(145deg, #111111, #222222);
+    border-radius: 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--celtics-green);
+    z-index: 1;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+    border: 1px solid var(--celtics-gold);
+}
+
+.game-date {
+    background: #000000;
+    color: white;
+    padding: 0.6rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-date::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(0,122,51,0.2));
+}
+
+.game-date .day {
+    font-size: 0.8rem;
+    display: block;
+    opacity: 0.9;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    color: var(--celtics-gold);
+}
+
+.game-date .date {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.game-teams {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0.6rem;
+    background: #161616;
+    position: relative;
+}
+
+.team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    transition: transform 0.3s ease;
+}
+
+.team:hover {
+    transform: scale(1.05);
+}
+
+.team-logo {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    margin-bottom: 0.4rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    transition: transform 0.3s ease;
+}
+
+.team:hover .team-logo {
+    transform: scale(1.1);
+}
+
+.team span {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: white;
+}
+
+.vs {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #777;
+    position: relative;
+    padding: 0 8px;
+}
+
+.vs::before, .vs::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 1px;
+    background: #444;
+}
+
+.vs::before {
+    left: -8px;
+}
+
+.vs::after {
+    right: -8px;
+}
+
+.game-info {
+    padding: 0.8rem;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    background: #1a1a1a;
+}
+
+.game-time, .game-venue {
+    margin-bottom: 0.4rem;
+    color: #aaa;
+    font-size: 0.75rem;
+}
+
+.game-venue {
+    font-weight: 500;
+}
+
+.game-result {
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.3rem 0;
+    margin-top: 0.3rem;
+    position: relative;
+    display: inline-block;
+}
+
+.game-result.win {
+    color: #00e676;
+}
+
+.game-result.win::before {
+    content: '✓';
+    margin-right: 3px;
+    font-size: 0.8em;
+}
+
+.game-result.loss {
+    color: #ff5252;
+}
+
+.game-result.loss::before {
+    content: '✗';
+    margin-right: 3px;
+    font-size: 0.8em;
+}
+
+.game-status {
+    font-weight: 600;
+    color: #aaa;
+    font-size: 0.95rem;
+    padding: 0.4rem 0;
+    position: relative;
+}
+
+.game-actions {
+    padding: 1rem;
+    text-align: center;
+    background: #161616;
+}
+
+.btn-ticket {
+    display: inline-block;
+    background-color: var(--celtics-green);
+    color: white;
+    padding: 0.6rem 1.4rem;
+    border-radius: 30px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ticket:hover {
+    background-color: var(--celtics-gold);
+    color: #000;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+}
+
+.btn-ticket::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 0;
+    padding-bottom: 120%;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+.btn-ticket:active::after {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    transition: 0s;
+}
+
+@media (max-width: 1200px) {
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.8rem;
+    }
+    
+    .team-logo {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 576px) {
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+    }
+    
+    .team-logo {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .team span {
+        font-size: 0.8rem;
+    }
+}
+
+/* Stats Section */
+.stats-section {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4rem 0;
+    margin: 0;
+    position: relative;
+    width: 100%;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(186, 150, 83, 0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(186, 150, 83, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-10px);
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--celtics-gold);
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    color: var(--white);
+    font-weight: 500;
+}
+
+/* News Section */
+.news-section {
+    padding: 4rem 0;
+    background: linear-gradient(135deg, var(--celtics-green), var(--dark-green));
+    width: 100%;
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.news-card {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(186, 150, 83, 0.2);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.news-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+}
+
+.news-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.news-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.news-date {
+    color: var(--celtics-gold);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.news-title {
+    color: var(--white);
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.news-excerpt {
+    color: #ccc;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    flex: 1;
+}
+
+.news-link {
+    color: var(--celtics-gold);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    margin-top: auto;
+}
+
+.news-link:hover {
+    color: #d4a74a;
+    gap: 0.8rem;
+}
+
+@media (max-width: 1024px) {
+    .news-grid {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        padding: 0 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .news-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        padding: 0 1rem;
+        width: 100%;
+    }
+    
+    .news-content {
+        padding: 1.2rem;
+    }
+    
+    .news-title {
+        font-size: 1.2rem;
+    }
+    
+    .news-image {
+        height: 200px;
+    }
+}
+
+/* Gallery Section */
+.gallery-section {
+    padding: 4rem 0;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    margin-bottom: 1rem;
+    aspect-ratio: 4/3;
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+.gallery-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    color: white;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        padding: 0 1rem;
+        width: 100%;
+    }
+    
+    .news-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .news-content {
+        padding: 1.2rem;
+    }
+    
+    .news-content h3 {
+        font-size: 1.2rem;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    
+    .gallery-item {
+        aspect-ratio: 3/2;
+    }
+}
+
+@media (max-width: 576px) {
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.8rem;
+    }
+    
+    .gallery-item {
+        aspect-ratio: 1/1;
+    }
+    
+    .gallery-item img {
+        height: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-grid {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+/* Responsive layouts */
+@media (max-width: 1400px) {
+    .container, 
+    .content,
+    .section-container,
+    .schedule-container,
+    .game-grid,
+    .news-grid,
+    .stats-grid,
+    .footer-content {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 1200px) {
+    .container, 
+    .content,
+    .section-container,
+    .schedule-container,
+    .game-grid,
+    .news-grid,
+    .stats-grid,
+    .footer-content {
+        max-width: 100%;
+        padding: 0 30px;
+    }
+    
+    .hero-title {
+        font-size: 3.8rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .container, 
+    .content,
+    .section-container,
+    .schedule-container,
+    .game-grid,
+    .news-grid,
+    .stats-grid,
+    .footer-content {
+        padding: 0 20px;
+    }
+    
+    .hero-title {
+        font-size: 3.2rem;
+    }
+    
+    .news-grid {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .container, 
+    .content,
+    .section-container,
+    .schedule-container,
+    .game-grid,
+    .news-grid,
+    .stats-grid,
+    .ticket-container,
+    .footer-content {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 15px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.8rem;
+    }
+    
+    .team-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .section-title {
+        font-size: 2.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .container, 
+    .content,
+    .section-container,
+    .schedule-container,
+    .game-grid,
+    .news-grid,
+    .stats-grid {
+        padding: 0 10px;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .game-card {
+        padding: 1.2rem;
+    }
+    
+    .section-title {
+        font-size: 1.8rem;
+    }
+    
+    .footer-content {
+        padding: 0 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .footer-section {
+        width: 100%;
+    }
+    
+    .newsletter-form {
+        width: 100%;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .newsletter-form input,
+    .newsletter-form button {
+        width: 100%;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-bottom-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .footer-legal {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .nav-container {
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-img {
+        height: 35px;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .mobile-menu-btn {
+        font-size: 20px;
+    }
+    
+    section {
+        padding: 40px 0;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .section-title::after {
+        width: 80px;
+        margin: 0.5rem auto;
+    }
+    
+    .form-container,
+    .ticket-container {
+        margin: 50px auto;
+        padding: 1rem;
+    }
+    
+    .ticket-title {
+        font-size: 1.5rem;
+    }
+    
+    .ticket-subtitle {
+        font-size: 0.9rem;
+    }
+}
+
+/* Make images responsive */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Fluid typography for better responsiveness */
+.schedule-title, 
+.section-title, 
+.hero-title,
+.ticket-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.schedule-subtitle, 
+.hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.8rem);
+}
+
+.team span,
+.game-time,
+.game-venue,
+.game-status {
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
+}
+
+.main-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.game-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.game-time, .game-venue, .game-status, .game-result {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.game-actions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-ticket {
+    width: 100%;
+    max-width: 200px;
+    text-align: center;
+    display: block;
+}
+
+/* Month Navigation */
+.month-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+    margin: 2rem auto;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.month-nav-link {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    border-radius: 30px;
+    background: #222;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.month-nav-link:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0,122,51,0.2), transparent);
+    transition: width 0.3s ease;
+}
+
+.month-nav-link:hover {
+    background: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+    border-color: var(--celtics-gold);
+}
+
+.month-nav-link:hover:before {
+    width: 100%;
+}
+
+/* Schedule Stats */
+.schedule-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 2rem 0 3rem;
+    background: linear-gradient(145deg, #111111, #222222);
+    border-radius: 16px;
+    padding: 2rem 1rem;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.schedule-stats:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--celtics-gold);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.8rem;
+    min-width: 100px;
+    position: relative;
+}
+
+.stat-item:not(:last-child):after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    height: 50%;
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+}
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--celtics-gold);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #ccc;
+    font-weight: 500;
+}
+
+/* Additional Game Card Styles */
+.game-card.home:before {
+    background: var(--celtics-green);
+}
+
+.game-card.away:before {
+    background: var(--celtics-gold);
+}
+
+.game-card.win.completed:after {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    background: var(--celtics-green);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.game-card.loss.completed:after {
+    content: '✗';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    background: #ff5252;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.game-venue i {
+    margin-right: 3px;
+    color: #777;
+    font-size: 0.75em;
+}
+
+@media (max-width: 768px) {
+    .month-navigation {
+        gap: 0.5rem;
+        padding: 0.8rem 0;
+    }
+    
+    .month-nav-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .schedule-stats {
+        padding: 1.5rem 0.5rem;
+    }
+    
+    .stat-item {
+        padding: 0.8rem;
+        min-width: 100px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .month-navigation {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding: 0.8rem 0;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    .month-navigation::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+    
+    .month-nav-link {
+        flex: 0 0 auto;
+    }
+    
+    .schedule-stats {
+        flex-wrap: wrap;
+    }
+    
+    .stat-item {
+        flex: 1 0 40%;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-item:not(:last-child):after {
+        display: none;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+    }
+}
+
+/* Remove the added body spacing selector */
+body > header,
+body > .hero,
+body > .content,
+body > .main-content,
+body > .container,
+body > .schedule-container,
+body > .ticket-container,
+body > section:first-of-type:not(.footer),
+body > div:first-of-type:not(.footer):not(.navbar) {
+    margin-top: 0;
+    padding-top: 0;
+}
+

@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Boston Celtics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/backgrounds/celticsweb.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 120px auto 60px; /* Adjusted margin for fixed navbar */
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            color: #fff;
+            position: relative;
+            z-index: 10;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--celtics-gold);
+            padding-bottom: 1rem;
+        }
+
+        .admin-title {
+            color: var(--celtics-gold);
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .refresh-btn {
+            background-color: var(--celtics-gold);
+            color: var(--black);
+            padding: 0.7rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: #d4a74a;
+            transform: translateY(-2px);
+        }
+
+        .refresh-btn::before {
+            content: "↻";
+            font-size: 1.2rem;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .users-table th {
+            background-color: rgba(186, 150, 83, 0.2);
+            font-weight: 600;
+            color: var(--celtics-gold);
+            position: relative;
+            text-align: left;
+            padding: 1rem;
+        }
+
+        .users-table tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .users-table tr:hover {
+            background-color: rgba(186, 150, 83, 0.1);
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .edit-btn {
+            background-color: var(--celtics-green);
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #008f3e;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #b02a37;
+        }
+
+        .user-count {
+            background-color: rgba(186, 150, 83, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--celtics-gold);
+            display: inline-block;
+        }
+        
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.9);
+            margin: 10% auto;
+            padding: 2rem;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            color: #fff;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--celtics-gold);
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #d4a74a;
+        }
+
+        .modal-title {
+            color: var(--celtics-gold);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(186, 150, 83, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--celtics-gold);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--celtics-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+        }
+
+        .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--celtics-gold);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+        }
+
+        .save-btn {
+            background-color: var(--celtics-gold);
+            color: var(--black);
+            padding: 0.7rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .save-btn:hover {
+            background-color: #d4a74a;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 1rem;
+            text-align: center;
+            padding: 0.5rem;
+            background-color: rgba(220, 53, 69, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: #28a745;
+            margin-top: 1rem;
+            text-align: center;
+            padding: 0.5rem;
+            background-color: rgba(40, 167, 69, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: var(--celtics-gold);
+            font-style: italic;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border: 1px solid rgba(186, 150, 83, 0.1);
+        }
+
+        .user-email {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        /* Ticket management styles */
+        .ticket-btn {
+            background-color: var(--celtics-gold);
+            color: var(--black);
+        }
+
+        .ticket-btn:hover {
+            background-color: #d4a74a;
+        }
+
+        .tickets-container {
+            display: none;
+            background: rgba(15, 15, 15, 0.8);
+            border-radius: 12px;
+            margin: 10px 0;
+            padding: 20px;
+            border: 1px solid rgba(186, 150, 83, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tickets-header {
+            color: var(--celtics-gold);
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tickets-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .tickets-close {
+            cursor: pointer;
+            color: var(--celtics-gold);
+            font-size: 1.2rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(186, 150, 83, 0.1);
+            transition: all 0.3s;
+        }
+
+        .tickets-close:hover {
+            background: rgba(186, 150, 83, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* Ticket filtering controls */
+        .tickets-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(186, 150, 83, 0.1);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .tickets-summary {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .tickets-count {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        .tickets-count-label {
+            color: var(--celtics-gold);
+            margin-right: 5px;
+        }
+        
+        /* Prevent duplicate count displays */
+        .tickets-count:not(:first-child) {
+            display: none;
+        }
+        
+        .tickets-filters {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .filter-item {
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #ccc;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .filter-item:hover {
+            background: rgba(186, 150, 83, 0.1);
+            border-color: rgba(186, 150, 83, 0.2);
+            color: var(--celtics-gold);
+        }
+        
+        .filter-item.active {
+            background: rgba(186, 150, 83, 0.2);
+            border-color: rgba(186, 150, 83, 0.3);
+            color: var(--celtics-gold);
+        }
+        
+        .filter-item .fa-circle {
+            font-size: 8px;
+        }
+        
+        .filter-pending .fa-circle {
+            color: #ffc107;
+        }
+        
+        .filter-approved .fa-circle {
+            color: #28a745;
+        }
+        
+        .filter-rejected .fa-circle {
+            color: #dc3545;
+        }
+        
+        .filter-all .fa-circle {
+            color: var(--celtics-gold);
+        }
+        
+        @media (max-width: 768px) {
+            .tickets-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .tickets-filters {
+                margin-top: 10px;
+                flex-wrap: wrap;
+            }
+        }
+
+        .tickets-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .ticket-item {
+            background: linear-gradient(145deg, rgba(30, 30, 30, 0.9), rgba(22, 22, 22, 0.95));
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(186, 150, 83, 0.15);
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+            border-color: rgba(186, 150, 83, 0.3);
+        }
+
+        .ticket-header {
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ticket-game {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+
+        .ticket-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ticket-status::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .ticket-status-pending {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .ticket-status-pending::before {
+            background-color: #ffc107;
+        }
+
+        .ticket-status-approved {
+            background-color: rgba(40, 167, 69, 0.15);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .ticket-status-approved::before {
+            background-color: #28a745;
+        }
+
+        .ticket-status-rejected {
+            background-color: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .ticket-status-rejected::before {
+            background-color: #dc3545;
+        }
+
+        .ticket-details {
+            padding: 16px;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .ticket-info {
+            margin-bottom: 6px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket-info-label {
+            color: var(--celtics-gold);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .ticket-info-value {
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+
+        .ticket-actions {
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .ticket-actions .action-btn {
+            flex: 1;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .ticket-actions .edit-btn {
+            background-color: var(--celtics-green);
+        }
+
+        .ticket-actions .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .no-tickets {
+            color: #aaa;
+            font-style: italic;
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            grid-column: 1 / -1;
+        }
+
+        .loading-tickets {
+            color: var(--celtics-gold);
+            text-align: center;
+            padding: 30px;
+            grid-column: 1 / -1;
+        }
+
+        /* Media queries for responsiveness */
+        @media (max-width: 768px) {
+            .tickets-list {
+                grid-template-columns: 1fr;
+            }
+
+            .ticket-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ticket-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .ticket-game {
+                max-width: 100%;
+                margin-bottom: 5px;
+            }
+        }
+
+        /* Ticket edit modal */
+        .edit-ticket-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .ticket-modal-content {
+            background-color: #111;
+            color: #fff;
+            width: 90%;
+            max-width: 800px;
+            margin: 5vh auto;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(186, 150, 83, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .ticket-modal-header {
+            border-bottom: 2px solid var(--celtics-gold);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ticket-modal-title {
+            color: var(--celtics-gold);
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .close-ticket-modal {
+            background: rgba(186, 150, 83, 0.1);
+            border: none;
+            color: var(--celtics-gold);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-ticket-modal:hover {
+            background: rgba(186, 150, 83, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .ticket-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ticket-form-full {
+            grid-column: 1 / -1;
+        }
+
+        .ticket-form-section {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ticket-form-section label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--celtics-gold);
+            font-size: 0.9rem;
+        }
+
+        .ticket-form-section input,
+        .ticket-form-section select,
+        .ticket-form-section textarea {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .ticket-form-section input:focus,
+        .ticket-form-section select:focus,
+        .ticket-form-section textarea:focus {
+            border-color: var(--celtics-gold);
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+        }
+
+        .ticket-form-section input:hover,
+        .ticket-form-section select:hover,
+        .ticket-form-section textarea:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(186, 150, 83, 0.3);
+        }
+
+        .ticket-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ticket-save-btn, .ticket-cancel-btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .ticket-save-btn {
+            background-color: var(--celtics-green);
+            color: white;
+            border: none;
+        }
+
+        .ticket-save-btn:hover {
+            background-color: #008f49;
+            transform: translateY(-2px);
+        }
+
+        .ticket-cancel-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ticket-cancel-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .status-select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .status-select {
+            width: 100%;
+            padding: 0.7rem;
+            padding-left: 2.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 50%;
+            left: 0.8rem;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-pending {
+            background-color: #ffc107;
+        }
+
+        .status-approved {
+            background-color: #28a745;
+        }
+
+        .status-rejected {
+            background-color: #dc3545;
+        }
+
+        .ticket-price-summary {
+            background: rgba(186, 150, 83, 0.05);
+            border: 1px solid rgba(186, 150, 83, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .price-row.price-total {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            color: var(--celtics-gold);
+            font-size: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .ticket-form-grid .ticket-form-section:nth-child(1),  /* Game */
+            .ticket-form-grid .ticket-form-section:nth-child(2) { /* Section Type */
+                grid-column: span 1;
+            }
+            
+            .ticket-form-grid .ticket-form-section:nth-child(3),  /* Section */
+            .ticket-form-grid .ticket-form-section:nth-child(4) { /* Quantity */
+                grid-column: span 1;
+            }
+            
+            .ticket-form-grid .ticket-form-section:nth-child(5),  /* Price Range */
+            .ticket-form-grid .ticket-form-section:nth-child(6),  /* Base Price */
+            .ticket-form-grid .ticket-form-section:nth-child(7) { /* Total Price */
+                grid-column: span 1;
+            }
+            
+            .ticket-form-grid .ticket-form-section:nth-child(8) { /* Status */
+                grid-column: 1;
+            }
+            
+            .ticket-form-grid .ticket-form-section:nth-child(9) { /* Notes */
+                grid-column: span 2;
+            }
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Add styles for close-modal-btn */
+        .close-modal-btn {
+            background: rgba(186, 150, 83, 0.1);
+            border: none;
+            color: var(--celtics-gold);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal-btn:hover {
+            background: rgba(186, 150, 83, 0.2);
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="MYweb.html">
+                    <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
+                </a>
+                <div class="nav-links">
+                    <a href="MYweb.html#news" class="nav-link">News</a>
+                    <a href="schedule.html" class="nav-link">Schedule</a>
+                    <a href="roster.html" class="nav-link">Roster</a>
+                    <a href="getTickets.html" class="nav-link">Get Tickets</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <a href="login.html" class="btn btn-outline">Login</a>
+                <a href="register.html" class="btn btn-outline">Sign Up</a>
+                <a href="MYweb.html#footer-contact" class="btn btn-outline">Contact</a>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="admin-title">Admin Dashboard</h1>
+            <button class="refresh-btn" onclick="refreshUsers()">Refresh Users</button>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+        
+        <div id="user-count" class="user-count">Loading users...</div>
+
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                <!-- Users will be populated here -->
+            </tbody>
+        </table>
+        <div id="no-data" class="no-data" style="display:none">No users found in the system.</div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-modal" class="edit-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeEditModal()">&times;</span>
+            <h2 class="modal-title">Edit User</h2>
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label for="edit-first-name">First Name</label>
+                    <input type="text" id="edit-first-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-last-name">Last Name</label>
+                    <input type="text" id="edit-last-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-email">Email</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-phone">Phone</label>
+                    <input type="tel" id="edit-phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-location">Location</label>
+                    <input type="text" id="edit-location" required>
+                </div>
+                <button type="submit" class="save-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ticket Edit Modal -->
+    <div id="editTicketModal" class="edit-ticket-modal">
+        <div class="ticket-modal-content">
+            <div class="ticket-modal-header">
+                <h2 class="ticket-modal-title"><i class="fas fa-ticket-alt"></i> Edit Ticket Request</h2>
+                <button class="close-modal-btn" onclick="closeTicketModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="ticketEditForm" class="ticket-edit-form" onsubmit="event.preventDefault(); submitTicketForm();">
+                <input type="hidden" id="ticketIdInput" name="_id">
+                
+                <div class="ticket-form-grid">
+                    <div class="ticket-form-section">
+                        <label for="game">Game</label>
+                        <input type="text" id="game" name="game" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="sectionType">Section Type</label>
+                        <select id="sectionType" name="sectionType" required>
+                            <option value="">Select Type</option>
+                            <option value="Floor">Floor</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Lower">Lower Level</option>
+                            <option value="Mid">Mid Level</option>
+                            <option value="Upper">Upper Level</option>
+                            <option value="Special">Special Areas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="section">Section</label>
+                        <input type="text" id="section" name="section" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" name="quantity" min="1" max="10" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="priceRange">Price Range</label>
+                        <input type="text" id="priceRange" name="priceRange" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="basePrice">Base Price ($)</label>
+                        <input type="number" id="basePrice" name="basePrice" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="totalPrice">Total Price ($)</label>
+                        <input type="number" id="totalPrice" name="totalPrice" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="notes">Admin Notes</label>
+                        <textarea id="notes" name="notes" rows="4"></textarea>
+                    </div>
+                </div>
+                
+                <div class="ticket-form-actions">
+                    <button type="button" class="ticket-cancel-btn" onclick="closeTicketModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" id="ticketSaveBtn" class="ticket-save-btn">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="navbar.js"></script>
+    <script>
+        // Improved admin status check with local storage caching to prevent jumps
+        let adminCheckInProgress = false;
+        
+        async function checkAdminStatus() {
+            // Prevent multiple simultaneous checks
+            if (adminCheckInProgress) return;
+            adminCheckInProgress = true;
+            
+            try {
+                // Try to use cached result first
+                const cachedAdmin = localStorage.getItem('isAdmin');
+                const cachedTime = localStorage.getItem('adminCheckTime');
+                const now = Date.now();
+                
+                // Use cache if it's less than 5 minutes old
+                if (cachedAdmin && cachedTime && (now - parseInt(cachedTime)) < 5 * 60 * 1000) {
+                    if (cachedAdmin === 'false') {
+                        console.log('Using cached admin status: Not admin');
+                        showToast('Access Denied: Admin privileges required', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/MYweb.html';
+                        }, 1500);
+                        return;
+                    } else if (cachedAdmin === 'true') {
+                        console.log('Using cached admin status: Is admin');
+                        loadUsers();
+                        return;
+                    }
+                }
+                
+                // If no valid cache, check with server
+                const response = await fetch('/api/user/profile', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    const status = response.status;
+                    localStorage.removeItem('isAdmin');
+                    
+                    if (status === 401 || status === 403) {
+                        showToast('Please log in to access admin panel', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/login.html?redirect=admin.html';
+                        }, 1500);
+                    } else {
+                        showToast(`Server error (${status}). Please try again later.`, 'error');
+                        setTimeout(() => {
+                            window.location.href = '/MYweb.html';
+                        }, 1500);
+                    }
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (!data.isAuthenticated) {
+                    localStorage.removeItem('isAdmin');
+                    showToast('Please log in to access admin panel', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login.html?redirect=admin.html';
+                    }, 1500);
+                    return;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('isAdmin', data.isAdmin.toString());
+                localStorage.setItem('adminCheckTime', now.toString());
+                
+                if (!data.isAdmin) {
+                    showToast('Access Denied: Admin privileges required', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/MYweb.html';
+                    }, 1500);
+                    return;
+                }
+                
+                // User is admin, load users
+                loadUsers();
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                localStorage.removeItem('isAdmin');
+                showToast('Connection error. Please try again.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login.html?redirect=admin.html';
+                }, 1500);
+            } finally {
+                adminCheckInProgress = false;
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+                
+                const users = await response.json();
+                document.getElementById('user-count').textContent = `Total Users: ${users.length}`;
+                displayUsers(users);
+                
+                // Show no data message if no users
+                if (users.length === 0) {
+                    document.getElementById('no-data').style.display = 'block';
+                } else {
+                    document.getElementById('no-data').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('user-count').textContent = 'Error loading users';
+                document.getElementById('users-table-body').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #dc3545;">
+                            ${error.message || 'Failed to load users. Please try again.'}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Display users in table
+        function displayUsers(users) {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-user-id', user._id);
+                
+                // Format the name with special styling if admin
+                const nameCell = `
+                    <strong>${user.firstName} ${user.lastName}</strong>
+                    ${user.isAdmin ? '<span style="color: var(--celtics-gold); margin-left:5px;">(Admin)</span>' : ''}
+                `;
+                
+                tr.innerHTML = `
+                    <td>${nameCell}</td>
+                    <td>
+                        <span class="user-email">${user.email}</span>
+                    </td>
+                    <td>${user.phone || 'Not provided'}</td>
+                    <td>${user.location || 'Not provided'}</td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="openEditModal('${user._id}')">Edit</button>
+                        <button class="action-btn delete-btn" onclick="deleteUser('${user._id}')">Delete</button>
+                        <button class="action-btn ticket-btn" onclick="toggleTickets('${user._id}')">Tickets</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                
+                // Add a row for tickets that will be hidden initially
+                const ticketsRow = document.createElement('tr');
+                ticketsRow.className = 'tickets-row';
+                ticketsRow.id = `tickets-row-${user._id}`;
+                ticketsRow.style.display = 'none';
+                
+                const ticketsCell = document.createElement('td');
+                ticketsCell.colSpan = 5;
+                ticketsCell.innerHTML = `
+                    <div class="tickets-container" id="tickets-container-${user._id}">
+                        <div class="tickets-header">
+                            <h3>Ticket History for ${user.firstName} ${user.lastName}</h3>
+                            <span class="tickets-close" onclick="toggleTickets('${user._id}')">&times;</span>
+                        </div>
+                        <div class="tickets-list" id="tickets-list-${user._id}">
+                            <p class="loading-tickets">Loading tickets...</p>
+                        </div>
+                    </div>
+                `;
+                
+                ticketsRow.appendChild(ticketsCell);
+                tbody.appendChild(ticketsRow);
+            });
+        }
+
+        // Open edit modal
+        async function openEditModal(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    credentials: 'include'
+                });
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch user details: ${response.status}`);
+                }
+                const user = await response.json();
+                
+                document.getElementById('edit-user-id').value = user._id;
+                document.getElementById('edit-first-name').value = user.firstName;
+                document.getElementById('edit-last-name').value = user.lastName;
+                document.getElementById('edit-email').value = user.email;
+                document.getElementById('edit-phone').value = user.phone || '';
+                document.getElementById('edit-location').value = user.location || '';
+                
+                document.getElementById('edit-modal').style.display = 'block';
+            } catch (error) {
+                console.error('Error opening edit modal:', error);
+                showError('Failed to load user details');
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            // Get the row with the user to show loading state
+            const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+            if (userRow) {
+                // Store original content and replace with loading indicator
+                userRow.dataset.originalHtml = userRow.innerHTML;
+                const loadingHtml = `
+                    <td colspan="5" style="text-align: center; padding: 1rem;">
+                        <i class="fas fa-spinner fa-spin" style="color: var(--celtics-gold); margin-right: 10px;"></i>
+                        Deleting user...
+                    </td>
+                `;
+                userRow.innerHTML = loadingHtml;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to delete user: ${response.status}`);
+                }
+
+                loadUsers();
+                showSuccess('User deleted successfully');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showError('Failed to delete user');
+                
+                // Restore the original row content if there was an error
+                if (userRow && userRow.dataset.originalHtml) {
+                    userRow.innerHTML = userRow.dataset.originalHtml;
+                }
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Update status indicator
+        function updateStatusIndicator(status) {
+            // Find or create the status select wrapper
+            let statusSelect = document.getElementById('edit-ticket-status');
+            let wrapper = statusSelect.parentElement;
+            
+            if (!wrapper.classList.contains('status-select-wrapper')) {
+                // Create wrapper
+                wrapper = document.createElement('div');
+                wrapper.className = 'status-select-wrapper';
+                statusSelect.parentNode.insertBefore(wrapper, statusSelect);
+                wrapper.appendChild(statusSelect);
+                
+                // Create indicator
+                const indicator = document.createElement('span');
+                indicator.className = 'status-indicator';
+                wrapper.insertBefore(indicator, statusSelect);
+            }
+            
+            // Get the indicator element
+            const indicator = wrapper.querySelector('.status-indicator');
+            
+            // Remove all status classes
+            indicator.classList.remove('status-pending', 'status-approved', 'status-rejected');
+            
+            // Add appropriate class
+            if (status === 'Pending') {
+                indicator.classList.add('status-pending');
+            } else if (status === 'Approved') {
+                indicator.classList.add('status-approved');
+            } else if (status === 'Rejected') {
+                indicator.classList.add('status-rejected');
+            }
+        }
+
+        // Toggle tickets section for a user
+        function toggleTickets(userId) {
+            const ticketsRow = document.getElementById(`tickets-row-${userId}`);
+            const ticketsContainer = document.getElementById(`tickets-container-${userId}`);
+            
+            if (ticketsRow.style.display === 'none') {
+                // Show tickets
+                ticketsRow.style.display = 'table-row';
+                ticketsContainer.style.display = 'block';
+                fetchUserTickets(userId);
+            } else {
+                // Hide tickets
+                ticketsRow.style.display = 'none';
+                ticketsContainer.style.display = 'none';
+            }
+        }
+
+        // Function to submit ticket form
+        async function submitTicketForm() {
+            // Get form data
+            const ticketId = document.getElementById('ticketIdInput').value;
+            const form = document.getElementById('ticketEditForm');
+            const userId = form.getAttribute('data-user-id');
+            
+            if (!ticketId || !userId) {
+                showToast('Missing ticket or user information', 'error');
+                console.error('Missing data - ticketId:', ticketId, 'userId:', userId);
+                return;
+            }
+            
+            // Store userId before anything else happens
+            localStorage.setItem('lastTicketUserId', userId);
+            
+            // Disable save button and show loading state
+            const saveButton = document.getElementById('ticketSaveBtn');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            // Set timeout to prevent UI from being stuck if request takes too long
+            const timeout = setTimeout(() => {
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                showToast('Request is taking longer than expected. Please try again.', 'warning');
+            }, 10000);
+            
+            // Prepare ticket data - get values directly from form fields
+            const ticketData = {
+                game: document.getElementById('game').value,
+                sectionType: document.getElementById('sectionType').value,
+                section: document.getElementById('section').value,
+                quantity: document.getElementById('quantity').value,
+                priceRange: document.getElementById('priceRange').value,
+                basePrice: document.getElementById('basePrice').value,
+                totalPrice: document.getElementById('totalPrice').value,
+                status: document.getElementById('status').value,
+                adminNotes: document.getElementById('notes').value
+            };
+            
+            console.log('Submitting ticket data:', { ticketId, userId, ticketData });
+            
+            try {
+                // Create a fetch call that handles the response properly
+                const response = await fetch(`/api/admin/tickets/${userId}/${ticketId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(ticketData)
+                });
+                
+                clearTimeout(timeout);
+                console.log('Ticket update status:', response.status);
+                
+                // Try to parse response
+                let responseData;
+                try {
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    if (responseText) {
+                        responseData = JSON.parse(responseText);
+                    }
+                } catch (e) {
+                    console.log('Response is not valid JSON:', e);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(
+                        (responseData && responseData.message) || 
+                        `Error ${response.status}: Failed to update ticket`
+                    );
+                }
+                
+                // Success
+                showToast('Ticket updated successfully!', 'success');
+                console.log('Ticket updated successfully');
+                
+                // Close modal first
+                closeTicketModal();
+                
+                // Ensure we have the user ID for refreshing
+                const storedUserId = localStorage.getItem('lastTicketUserId') || userId;
+                
+                // Refresh tickets after a short delay using the saved userId
+                setTimeout(() => {
+                    fetchUserTickets(storedUserId);
+                }, 300);
+            } catch (error) {
+                console.error('Error updating ticket:', error);
+                showToast(error.message || 'Failed to update ticket', 'error');
+            } finally {
+                clearTimeout(timeout);
+                // Always reset UI state
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }
+        }
+        
+        // Function to fetch user tickets
+        async function fetchUserTickets(userId) {
+            const ticketsList = document.getElementById(`tickets-list-${userId}`);
+            if (!ticketsList) return;
+            
+            // Show temporary loading message
+            ticketsList.innerHTML = '<p class="loading-tickets"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</p>';
+            
+            try {
+                const response = await fetch(`/api/admin/tickets/${userId}`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch tickets: ${response.status}`);
+                }
+                
+                const tickets = await response.json();
+                
+                // Display tickets
+                if (tickets.length === 0) {
+                    ticketsList.innerHTML = '<p class="no-tickets">No tickets found for this user.</p>';
+                    return;
+                }
+                
+                // Add filtering controls
+                ticketsList.innerHTML = '';
+                addTicketControls(userId, tickets);
+                displayUserTickets(userId, tickets);
+            } catch (error) {
+                console.error('Error fetching tickets:', error);
+                ticketsList.innerHTML = `<p class="no-tickets">Error loading tickets: ${error.message}. Please try again.</p>`;
+            }
+        }
+        
+        // Function to add ticket filtering controls
+        function addTicketControls(userId, tickets) {
+            const ticketsContainer = document.getElementById(`tickets-container-${userId}`);
+            if (!ticketsContainer) return;
+            
+            // Count tickets by status
+            const counts = {
+                all: tickets.length,
+                pending: tickets.filter(t => t.status.toLowerCase() === 'pending').length,
+                approved: tickets.filter(t => t.status.toLowerCase() === 'approved').length,
+                rejected: tickets.filter(t => t.status.toLowerCase() === 'rejected').length
+            };
+            
+            // Create controls element
+            const controls = document.createElement('div');
+            controls.className = 'tickets-controls';
+            controls.innerHTML = `
+                <div class="tickets-summary">
+                    <div class="tickets-count">
+                        <span class="tickets-count-label">Total:</span>
+                        <span>${counts.all}</span>
+                    </div>
+                </div>
+                <div class="tickets-filters">
+                    <div class="filter-item filter-all active" data-filter="all">
+                        <i class="fas fa-circle"></i> All (${counts.all})
+                    </div>
+                    <div class="filter-item filter-pending" data-filter="pending">
+                        <i class="fas fa-circle"></i> Pending (${counts.pending})
+                    </div>
+                    <div class="filter-item filter-approved" data-filter="approved">
+                        <i class="fas fa-circle"></i> Approved (${counts.approved})
+                    </div>
+                    <div class="filter-item filter-rejected" data-filter="rejected">
+                        <i class="fas fa-circle"></i> Rejected (${counts.rejected})
+                    </div>
+                </div>
+            `;
+            
+            // Clear any existing controls first to prevent duplicates
+            const existingControls = ticketsContainer.querySelector('.tickets-controls');
+            if (existingControls) {
+                existingControls.remove();
+            }
+            
+            // Insert controls before tickets list
+            const ticketsList = document.getElementById(`tickets-list-${userId}`);
+            if (ticketsList) {
+                ticketsList.parentNode.insertBefore(controls, ticketsList);
+                
+                // Add event listeners to filters
+                controls.querySelectorAll('.filter-item').forEach(filter => {
+                    filter.addEventListener('click', () => {
+                        // Update active state
+                        controls.querySelectorAll('.filter-item').forEach(f => f.classList.remove('active'));
+                        filter.classList.add('active');
+                        
+                        // Apply filter
+                        const filterValue = filter.dataset.filter;
+                        filterTickets(userId, filterValue);
+                    });
+                });
+            }
+        }
+        
+        // Function to filter tickets
+        function filterTickets(userId, filterValue) {
+            const ticketsList = document.getElementById(`tickets-list-${userId}`);
+            if (!ticketsList) return;
+            
+            const tickets = ticketsList.querySelectorAll('.ticket-item');
+            
+            tickets.forEach(ticket => {
+                if (filterValue === 'all') {
+                    ticket.style.display = 'flex';
+                } else {
+                    const status = ticket.dataset.status.toLowerCase();
+                    ticket.style.display = status === filterValue ? 'flex' : 'none';
+                }
+            });
+        }
+        
+        // Function to display user tickets
+        function displayUserTickets(userId, tickets) {
+            const ticketsList = document.getElementById(`tickets-list-${userId}`);
+            if (!ticketsList) return;
+            
+            // Clear existing content
+            ticketsList.innerHTML = '';
+            
+            // Add tickets
+            tickets.forEach(ticket => {
+                const status = ticket.status.toLowerCase();
+                const statusClass = `ticket-status-${status}`;
+                const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+                
+                const ticketElem = document.createElement('div');
+                ticketElem.className = 'ticket-item';
+                ticketElem.dataset.status = status;
+                
+                // Format date
+                const date = new Date(ticket.timestamp);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                ticketElem.innerHTML = `
+                    <div class="ticket-header">
+                        <div class="ticket-game">${ticket.game}</div>
+                        <div class="ticket-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="ticket-details">
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Date</span>
+                            <span class="ticket-info-value">${formattedDate}</span>
+                        </div>
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Section</span>
+                            <span class="ticket-info-value">${ticket.section}</span>
+                        </div>
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Type</span>
+                            <span class="ticket-info-value">${ticket.sectionType || 'N/A'}</span>
+                        </div>
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Quantity</span>
+                            <span class="ticket-info-value">${ticket.quantity}</span>
+                        </div>
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Price Range</span>
+                            <span class="ticket-info-value">${ticket.priceRange || 'N/A'}</span>
+                        </div>
+                        <div class="ticket-info">
+                            <span class="ticket-info-label">Total Price</span>
+                            <span class="ticket-info-value">$${parseFloat(ticket.totalPrice).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="ticket-actions">
+                        <button class="action-btn edit-btn" onclick="openTicketModal('${ticket._id}', '${userId}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteTicket('${ticket._id}', '${userId}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                ticketsList.appendChild(ticketElem);
+            });
+        }
+        
+        // Function to delete ticket
+        async function deleteTicket(ticketId, userId) {
+            if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/tickets/${userId}/${ticketId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to delete ticket: ${response.status}`);
+                }
+                
+                showToast('Ticket deleted successfully!', 'success');
+                fetchUserTickets(userId);
+            } catch (error) {
+                console.error('Error deleting ticket:', error);
+                showToast(error.message || 'Failed to delete ticket', 'error');
+            }
+        }
+        
+        // Function to open ticket modal
+        async function openTicketModal(ticketId, userId) {
+            try {
+                console.log('Opening ticket modal for:', { ticketId, userId });
+                
+                // Reset any existing state
+                const modal = document.getElementById('editTicketModal');
+                const form = document.getElementById('ticketEditForm');
+                form.reset();
+                form.setAttribute('data-user-id', userId);
+                
+                // Reset button state
+                const saveButton = document.getElementById('ticketSaveBtn');
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                
+                // Show the modal
+                modal.style.display = 'block';
+                
+                // Show a loading message in the form
+                const loadingHtml = '<div style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading ticket details...</div>';
+                document.querySelector('.ticket-form-grid').innerHTML = loadingHtml;
+                
+                // Fetch ticket data
+                console.log('Fetching ticket data from API...');
+                const response = await fetch(`/api/admin/tickets/${userId}/${ticketId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ticket: ${response.status}`);
+                }
+                
+                const ticket = await response.json();
+                console.log('Ticket data received:', ticket);
+                
+                // Restore the original form structure
+                document.querySelector('.ticket-form-grid').innerHTML = `
+                    <div class="ticket-form-section">
+                        <label for="game">Game</label>
+                        <input type="text" id="game" name="game" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="sectionType">Section Type</label>
+                        <select id="sectionType" name="sectionType" required>
+                            <option value="">Select Type</option>
+                            <option value="Floor">Floor</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Lower">Lower Level</option>
+                            <option value="Mid">Mid Level</option>
+                            <option value="Upper">Upper Level</option>
+                            <option value="Special">Special Areas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="section">Section</label>
+                        <input type="text" id="section" name="section" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" name="quantity" min="1" max="10" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="priceRange">Price Range</label>
+                        <input type="text" id="priceRange" name="priceRange" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="basePrice">Base Price ($)</label>
+                        <input type="number" id="basePrice" name="basePrice" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="totalPrice">Total Price ($)</label>
+                        <input type="number" id="totalPrice" name="totalPrice" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="status">Status</label>
+                        <select id="status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="ticket-form-section">
+                        <label for="notes">Admin Notes</label>
+                        <textarea id="notes" name="notes" rows="4"></textarea>
+                    </div>
+                `;
+                
+                // Set hidden input
+                document.getElementById('ticketIdInput').value = ticket._id || '';
+                
+                // Set form values with a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    document.getElementById('game').value = ticket.game || '';
+                    document.getElementById('sectionType').value = ticket.sectionType || '';
+                    document.getElementById('section').value = ticket.section || '';
+                    document.getElementById('quantity').value = ticket.quantity || '';
+                    document.getElementById('priceRange').value = ticket.priceRange || '';
+                    document.getElementById('basePrice').value = ticket.basePrice || '';
+                    document.getElementById('totalPrice').value = ticket.totalPrice || '';
+                    document.getElementById('status').value = ticket.status ? ticket.status.toLowerCase() : 'pending';
+                    document.getElementById('notes').value = ticket.adminNotes || '';
+                    
+                    console.log('Form fields populated:', {
+                        game: document.getElementById('game').value,
+                        status: document.getElementById('status').value
+                    });
+                }, 100);
+                
+                // Double-check that form has the user ID
+                if (form.getAttribute('data-user-id') !== userId) {
+                    form.setAttribute('data-user-id', userId);
+                }
+            } catch (error) {
+                console.error('Error opening ticket modal:', error);
+                showToast(`Failed to load ticket details: ${error.message}`, 'error');
+                closeTicketModal();
+            }
+        }
+        
+        // Function to close ticket modal
+        function closeTicketModal() {
+            try {
+                const modal = document.getElementById('editTicketModal');
+                if (!modal) return;
+                
+                // Clean up any loaders first
+                cleanupAllLoaders();
+                
+                // Hide the modal
+                modal.style.display = 'none';
+                
+                // Reset form
+                const form = document.getElementById('ticketEditForm');
+                if (form) {
+                    form.reset();
+                    // Preserve user ID for future reference
+                    const userId = form.getAttribute('data-user-id');
+                    if (userId) {
+                        localStorage.setItem('lastTicketUserId', userId);
+                    }
+                }
+                
+                // Reset button state
+                const saveButton = document.getElementById('ticketSaveBtn');
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                }
+            } catch (error) {
+                console.error('Error closing ticket modal:', error);
+                // Force hide the modal even if there's an error
+                const modal = document.getElementById('editTicketModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+        // Function to clean up all loaders
+        function cleanupAllLoaders() {
+            // Hide any loading spinners in buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (button.innerHTML.includes('fa-spinner')) {
+                    // Try to restore original text if possible
+                    if (button.dataset.originalText) {
+                        button.innerHTML = button.dataset.originalText;
+                    } else if (button.id === 'ticketSaveBtn') {
+                        button.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                    }
+                    button.disabled = false;
+                }
+            });
+        }
+        
+        // Function to refresh users
+        function refreshUsers() {
+            loadUsers();
+            showToast('Users refreshed', 'success');
+        }
+        
+        // Check admin status when page loads
+        window.addEventListener('DOMContentLoaded', checkAdminStatus);
+
+        // Close edit modal function
+        function closeEditModal() {
+            try {
+                const modal = document.getElementById('edit-modal');
+                if (!modal) return;
+                
+                // Clean up any loaders first
+                cleanupAllLoaders();
+                
+                // Hide the modal
+                modal.style.display = 'none';
+                
+                // Reset form
+                const form = document.getElementById('edit-user-form');
+                if (form) {
+                    form.reset();
+                }
+                
+                // Reset button state
+                const saveButton = form?.querySelector('button[type="submit"]');
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = 'Save Changes';
+                }
+            } catch (error) {
+                console.error('Error closing edit modal:', error);
+                // Force hide the modal even if there's an error
+                const modal = document.getElementById('edit-modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+        // Edit user form submission
+        document.getElementById('edit-user-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('edit-user-id').value;
+            const saveButton = event.target.querySelector('button[type="submit"]');
+            
+            // Show loading state
+            const originalButtonText = saveButton.innerHTML;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            // Set timeout to prevent UI from being stuck if request takes too long
+            const timeout = setTimeout(() => {
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalButtonText;
+                showToast('Request is taking longer than expected. Please try again.', 'warning');
+                closeEditModal(); // Always close modal if timeout occurs
+            }, 10000);
+            
+            // Get user data
+            const userData = {
+                firstName: document.getElementById('edit-first-name').value,
+                lastName: document.getElementById('edit-last-name').value,
+                email: document.getElementById('edit-email').value,
+                phone: document.getElementById('edit-phone').value,
+                location: document.getElementById('edit-location').value
+            };
+            
+            try {
+                console.log('Sending user update:', userData);
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(userData)
+                });
+                
+                clearTimeout(timeout);
+                
+                // Try to parse response data
+                let responseData;
+                try {
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    if (responseText) {
+                        responseData = JSON.parse(responseText);
+                    }
+                } catch (e) {
+                    console.log('Response is not valid JSON:', e);
+                }
+                
+                // Always close modal first to prevent UI from freezing
+                closeEditModal();
+                
+                if (!response.ok) {
+                    throw new Error(
+                        (responseData && responseData.message) || 
+                        `Failed to update user: ${response.status}`
+                    );
+                }
+                
+                // Success - refresh the users list
+                showToast('User updated successfully!', 'success');
+                
+                // Short delay before refreshing data
+                setTimeout(() => {
+                    loadUsers();
+                }, 300);
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showToast(error.message || 'Failed to update user', 'error');
+                // Make sure we try to refresh the users list even on error
+                setTimeout(() => {
+                    loadUsers();
+                }, 300);
+            } finally {
+                clearTimeout(timeout);
+                // Always ensure UI state is reset and modal is closed
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalButtonText;
+                
+                // Double-check that modal is closed
+                const modal = document.getElementById('edit-modal');
+                if (modal && modal.style.display !== 'none') {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.bottom = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.backgroundColor = type === 'success' ? '#2ecc71' : 
+                                        type === 'error' ? '#e74c3c' : 
+                                        type === 'warning' ? '#f39c12' : '#3498db';
+            toast.style.color = '#fff';
+            toast.style.padding = '12px 20px';
+            toast.style.borderRadius = '5px';
+            toast.style.marginTop = '10px';
+            toast.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.justifyContent = 'space-between';
+            toast.style.minWidth = '250px';
+            toast.style.maxWidth = '400px';
+            toast.style.animation = 'fadeIn 0.3s, fadeOut 0.3s 2.7s';
+            
+            // Add icon based on type
+            let icon = '';
+            if (type === 'success') icon = '✅';
+            else if (type === 'error') icon = '❌';
+            else if (type === 'warning') icon = '⚠️';
+            else icon = 'ℹ️';
+            
+            toast.innerHTML = `<span>${icon} ${message}</span>`;
+            
+            // Add close button
+            const closeBtn = document.createElement('button');
+            closeBtn.style.background = 'none';
+            closeBtn.style.border = 'none';
+            closeBtn.style.color = '#fff';
+            closeBtn.style.fontSize = '16px';
+            closeBtn.style.marginLeft = '10px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.innerHTML = '×';
+            closeBtn.onclick = () => toastContainer.removeChild(toast);
+            toast.appendChild(closeBtn);
+            
+            // Add to container
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toastContainer.contains(toast)) {
+                    toastContainer.removeChild(toast);
+                }
+            }, 3000);
+        }
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
+                <p class="footer-description">The most successful team in NBA history, with 18 championships and counting.</p>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/bostonceltics/" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="https://www.instagram.com/celtics/?hl=en" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://x.com/celtics" target="_blank" rel="noopener noreferrer">
+                        <i class="fa-solid fa-x"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="MYweb.html">Home</a></li>
+                    <li><a href="MYweb.html#news">News</a></li>
+                    <li><a href="schedule.html">Schedule</a></li>
+                    <li><a href="roster.html">Roster</a></li>
+                    <li><a href="getTickets.html">Tickets</a></li>
+                </ul>
+            </div>
+            <div class="footer-section" id="footer-contact">
+                <h4>Contact Us</h4>
+                <ul class="contact-info">
+                    <li>
+                        <i class="fas fa-user"></i>
+                        <span>Yoav Cohen</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-envelope"></i>
+                        <span>yoav23cohen@gmail.com</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-phone"></i>
+                        <span>+972 52-466-9882</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Herut, Israel</span>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/yoav-cohen-42b4272a5/" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin"></i>
+                            <span>LinkedIn Profile</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Newsletter</h4>
+                <p>Subscribe to get the latest Celtics news and updates.</p>
+                <div class="newsletter-form">
+                    <input type="email" placeholder="Enter your email" aria-label="Email for newsletter">
+                    <button type="submit" aria-label="Subscribe to newsletter">Subscribe</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Boston Celtics. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

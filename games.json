@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "date": "2024-03-28",
+    "opponent": "Milwaukee Bucks",
+    "location": "TD Garden",
+    "time": "7:30 PM ET"
+  },
+  {
+    "id": "2",
+    "date": "2024-03-30",
+    "opponent": "Philadelphia 76ers",
+    "location": "TD Garden",
+    "time": "7:00 PM ET"
+  },
+  {
+    "id": "3",
+    "date": "2024-04-01",
+    "opponent": "Charlotte Hornets",
+    "location": "Spectrum Center",
+    "time": "7:00 PM ET"
+  }
+]
