@@ -195,5 +195,35 @@
     "totalPrice": 872.5,
     "status": "Pending",
     "timestamp": "2025-03-25T22:33:43.387Z"
+  },
+  {
+    "id": "67e41796cdd9d8111ddcc4fd",
+    "userId": "67e16763b73868436f17e7e7",
+    "game": "celtics-vs-bucks",
+    "sectionType": "lower",
+    "section": "6",
+    "quantity": "4",
+    "specialRequests": "",
+    "basePrice": 350,
+    "serviceFee": 52.5,
+    "processingFee": 5,
+    "totalPrice": 1548.5,
+    "status": "Pending",
+    "timestamp": "2025-03-26T15:04:54.896Z"
+  },
+  {
+    "id": "67e41c51cdd9d8111ddcc540",
+    "userId": "67e16763b73868436f17e7e7",
+    "game": "celtics-vs-76ers",
+    "sectionType": "mid",
+    "section": "109",
+    "quantity": "1",
+    "specialRequests": "",
+    "basePrice": 225,
+    "serviceFee": 33.75,
+    "processingFee": 5,
+    "totalPrice": 263.75,
+    "status": "Pending",
+    "timestamp": "2025-03-26T15:25:05.317Z"
   }
 ]

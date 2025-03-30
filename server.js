@@ -9,7 +9,7 @@ const User = require('./models/User');
 const Ticket = require('./models/Ticket');
 
 const app = express();
-const port = process.env.PORT || 5555;
+const port = process.env.PORT || 8080;
 
 // Connect to MongoDB
 connectDB();
@@ -258,49 +258,28 @@ app.get('/api/games', (req, res) => {
 });
 
 // Ticket request routes
-app.post('/api/tickets/request', isAuthenticated, async (req, res) => {
+app.post('/api/tickets', isAuthenticated, async (req, res) => {
     try {
-        // Create a new ticket in MongoDB
-        const newTicket = new Ticket({
+        const { game, section, sectionType, quantity } = req.body;
+        
+        // Create new ticket with required fields
+        const ticket = new Ticket({
             userId: req.session.user.id,
-            game: req.body.game,
-            sectionType: req.body.sectionType,
-            section: req.body.section,
-            quantity: req.body.quantity,
-            priceRange: req.body.priceRange,
-            basePrice: req.body.basePrice,
-            serviceFee: req.body.serviceFee,
-            processingFee: req.body.processingFee,
-            totalPrice: req.body.totalPrice,
-            specialRequests: req.body.specialRequests,
-            status: 'Pending',
-            timestamp: new Date()
+            game,
+            section,
+            sectionType,
+            quantity
         });
         
-        await newTicket.save();
+        // Price will be calculated automatically via pre-save middleware
+        await ticket.save();
         
-        // Also save to submissions.json for backwards compatibility
-        try {
-            const submissions = JSON.parse(fs.readFileSync(submissionsFile, 'utf8'));
-            
-            const ticketRequest = {
-                id: newTicket._id.toString(),
-                userId: req.session.user.id,
-                ...req.body,
-                status: 'Pending',
-                timestamp: new Date().toISOString()
-            };
-            
-            submissions.push(ticketRequest);
-            fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
-        } catch (fileError) {
-            console.error('Error updating submissions file:', fileError);
-            // Continue anyway since we have the ticket in MongoDB
-        }
-        
-        res.json({ message: 'Ticket request submitted successfully' });
+        res.status(201).json({
+            message: 'Ticket request submitted successfully',
+            ticket: ticket
+        });
     } catch (error) {
-        console.error('Ticket request error:', error);
+        console.error('Error creating ticket:', error);
         res.status(500).json({ message: 'Error submitting ticket request' });
     }
 });
@@ -671,6 +650,108 @@ app.delete('/api/admin/tickets/:userId/:ticketId', async (req, res) => {
     } catch (error) {
         console.error('Error deleting ticket:', error);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Update ticket for admin
+app.put('/api/tickets/:id', isAdmin, async (req, res) => {
+    try {
+        const { game, section, sectionType, quantity, status, adminNotes } = req.body;
+        const ticketId = req.params.id;
+        
+        const ticket = await Ticket.findById(ticketId);
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        
+        // Update ticket fields
+        ticket.game = game || ticket.game;
+        ticket.section = section || ticket.section;
+        ticket.sectionType = sectionType || ticket.sectionType;
+        ticket.quantity = quantity || ticket.quantity;
+        ticket.status = status || ticket.status;
+        ticket.adminNotes = adminNotes;
+        
+        // Recalculate prices if relevant fields changed
+        if (sectionType || quantity) {
+            const prices = ticket.calculatePrice();
+            ticket.basePrice = prices.basePrice;
+            ticket.totalPrice = prices.totalPrice;
+        }
+        
+        await ticket.save();
+        
+        res.json({
+            message: 'Ticket updated successfully',
+            ticket: ticket
+        });
+    } catch (error) {
+        console.error('Error updating ticket:', error);
+        res.status(500).json({ message: 'Error updating ticket' });
+    }
+});
+
+// Get a single ticket by ID
+app.get('/api/tickets/:id', isAuthenticated, async (req, res) => {
+    try {
+        const ticketId = req.params.id;
+        
+        // Find the ticket
+        const ticket = await Ticket.findById(ticketId);
+        
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        
+        // Check if the user is allowed to view this ticket
+        if (ticket.userId.toString() !== req.session.user.id.toString() && !req.session.user.isAdmin) {
+            return res.status(403).json({ message: 'Not authorized to view this ticket' });
+        }
+        
+        res.json(ticket);
+    } catch (error) {
+        console.error('Error getting ticket:', error);
+        res.status(500).json({ message: 'Error retrieving ticket details' });
+    }
+});
+
+// Admin route to get all tickets
+app.get('/api/admin/tickets', isAdmin, async (req, res) => {
+    try {
+        const tickets = await Ticket.find({}).sort({ timestamp: -1 });
+        res.json(tickets);
+    } catch (error) {
+        console.error('Error fetching all tickets:', error);
+        res.status(500).json({ message: 'Error fetching tickets' });
+    }
+});
+
+// Check if a user is authenticated and is an admin
+app.get('/api/check-admin', (req, res) => {
+    try {
+        if (!req.session.user || !req.session.user.id) {
+            return res.status(401).json({ isAdmin: false, message: 'Not authenticated' });
+        }
+        
+        // Check if user is an admin
+        User.findById(req.session.user.id)
+            .then(user => {
+                if (!user) {
+                    return res.status(404).json({ isAdmin: false, message: 'User not found' });
+                }
+                
+                return res.json({
+                    isAdmin: user.isAdmin === true,
+                    userId: user._id.toString()
+                });
+            })
+            .catch(error => {
+                console.error('Error checking admin status:', error);
+                res.status(500).json({ isAdmin: false, message: 'Server error checking admin status' });
+            });
+    } catch (error) {
+        console.error('Exception in admin check:', error);
+        res.status(500).json({ isAdmin: false, message: 'Server error' });
     }
 });
 

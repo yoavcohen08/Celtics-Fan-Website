@@ -962,22 +962,6 @@
                                 </div>
                             </div>
 
-                            <div class="form-row">
-                                <div class="form-group field-has-icon">
-                                    <label for="priceRange">Price Range</label>
-                                    <div class="input-wrapper">
-                                        <select id="priceRange" name="priceRange" class="form-select" required onchange="updatePriceEstimate()">
-                                            <option value="">Select price range...</option>
-                                            <option value="100-200">$100 - $200</option>
-                                            <option value="200-300">$200 - $300</option>
-                                            <option value="300-500">$300 - $500</option>
-                                            <option value="500+">$500+</option>
-                                        </select>
-                                        <i class="fas fa-dollar-sign field-icon"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
                             <div id="priceEstimate" class="price-calculator" style="display: none;">
                                 <div class="price-calculator-title">
                                     <i class="fas fa-calculator"></i> Estimated Price
@@ -1076,7 +1060,7 @@
         // Check if user is authenticated
         async function checkAccessAndRender() {
             try {
-                const response = await fetch('http://localhost:5555/api/auth/status');
+                const response = await fetch('/api/auth/status');
                 const data = await response.json();
                 const contentContainer = document.getElementById('content-container');
                 
@@ -1099,7 +1083,7 @@
                     }
                     
                     // Set up event listeners for form fields to update steps
-                    const formFields = document.querySelectorAll('#game, #sectionType, #seatSection, #ticketQuantity, #priceRange');
+                    const formFields = document.querySelectorAll('#game, #sectionType, #seatSection, #ticketQuantity');
                     formFields.forEach(field => {
                         field.addEventListener('change', updateProgressSteps);
                     });
@@ -1113,6 +1097,7 @@
                     <div class="error-container">
                         <h2>Something went wrong</h2>
                         <p>We encountered an error while checking your authentication status. Please try again later.</p>
+                        <p>Error details: ${error.message}</p>
                     </div>
                 `;
             }
@@ -1157,7 +1142,6 @@
             const sectionTypeField = document.getElementById('sectionType');
             const sectionField = document.getElementById('seatSection');
             const quantityField = document.getElementById('ticketQuantity');
-            const priceField = document.getElementById('priceRange');
             
             // Get the step elements by ID
             const step1 = document.getElementById('step1');
@@ -1190,7 +1174,7 @@
             }
             
             // Step 2: Seating
-            if (sectionTypeField.value && sectionField.value && quantityField.value && priceField.value) {
+            if (sectionTypeField.value && sectionField.value && quantityField.value) {
                 step2.classList.add('completed');
                 stepItem2.classList.add('progress-step-item-completed');
             } else {
@@ -1209,9 +1193,8 @@
             const sectionType = document.getElementById('sectionType').value;
             const section = document.getElementById('seatSection').value;
             const quantity = parseInt(document.getElementById('ticketQuantity').value) || 0;
-            const priceRange = document.getElementById('priceRange').value;
             
-            if (!sectionType || !section || !quantity || !priceRange) {
+            if (!sectionType || !section || !quantity) {
                 document.getElementById('priceEstimate').style.display = 'none';
                 return;
             }
@@ -1233,26 +1216,23 @@
                 basePrice = 500; // Suites & special areas
             }
             
-            // Adjust based on price range
-            if (priceRange === '100-200') {
-                basePrice = Math.min(basePrice, 200);
-            } else if (priceRange === '200-300') {
-                basePrice = Math.min(Math.max(basePrice, 200), 300);
-            } else if (priceRange === '300-500') {
-                basePrice = Math.min(Math.max(basePrice, 300), 500);
-            } else if (priceRange === '500+') {
-                basePrice = Math.max(basePrice, 500);
-            }
-            
             // Add price variations for premium sections
             if (['FL20', 'FL21'].includes(section)) basePrice += 100; // Best floor seats
             if (['VIP12'].includes(section)) basePrice += 75; // Best VIP area
             if (['12', '21'].includes(section)) basePrice += 50; // Best lower level
             if (['garden-deck', 'exec-suites'].includes(section)) basePrice += 150; // Premium special areas
             
+            // Apply quantity discount
+            let quantityMultiplier = 1;
+            if (quantity >= 5) {
+                quantityMultiplier = 0.9; // 10% discount for 5+ tickets
+            } else if (quantity >= 3) {
+                quantityMultiplier = 0.95; // 5% discount for 3-4 tickets
+            }
+            
             const serviceFee = basePrice * 0.15;
             const processingFee = 5;
-            const totalPrice = (basePrice + serviceFee + processingFee) * quantity;
+            const totalPrice = (basePrice + serviceFee + processingFee) * quantity * quantityMultiplier;
             
             document.getElementById('basePrice').textContent = `$${basePrice.toFixed(2)}`;
             document.getElementById('serviceFee').textContent = `$${serviceFee.toFixed(2)}`;
@@ -1350,12 +1330,6 @@
             const formData = new FormData(form);
             const ticketData = Object.fromEntries(formData.entries());
             
-            // Add calculated price information
-            const sectionType = document.getElementById('sectionType').value;
-            const section = document.getElementById('seatSection').value;
-            const quantity = parseInt(document.getElementById('ticketQuantity').value) || 0;
-            const priceRange = document.getElementById('priceRange').value;
-            
             // Get price information from the price estimate section
             const basePrice = parseFloat(document.getElementById('basePrice').textContent.replace('$', '')) || 0;
             const serviceFee = parseFloat(document.getElementById('serviceFee').textContent.replace('$', '')) || 0;
@@ -1396,7 +1370,7 @@
             document.getElementById('successMessage').style.display = 'none';
             
             try {
-                const response = await fetch('http://localhost:5555/api/tickets/request', {
+                const response = await fetch('/api/tickets/request', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

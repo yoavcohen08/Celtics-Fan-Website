@@ -264,11 +264,12 @@
             transition: all 0.3s ease;
             position: relative;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
         }
         
         .ticket-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             border-color: rgba(186, 150, 83, 0.3);
         }
         
@@ -378,7 +379,7 @@
             background-color: var(--celtics-green);
             color: #fff;
         }
-        
+
         .ticket-btn.primary:hover {
             background-color: #006D32;
         }
@@ -517,6 +518,126 @@
         .footer {
             margin-top: 80px;
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #1a2035;
+            margin: 10% auto;
+            padding: 0;
+            border: 1px solid #546;
+            border-radius: 10px;
+            width: 70%;
+            max-width: 700px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s;
+        }
+
+        @keyframes modalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background-color: #27ae60;
+            color: white;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #bbb;
+        }
+
+        .modal-body {
+            padding: 20px;
+            color: #eee;
+        }
+
+        .ticket-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .price-breakdown {
+            background-color: rgba(39, 174, 96, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #27ae60;
+            margin-top: 20px;
+        }
+
+        .price-breakdown-title {
+            color: #27ae60;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .price-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid rgba(39, 174, 96, 0.3);
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #27ae60;
+        }
     </style>
 </head>
 <body>
@@ -590,6 +711,19 @@
                         <i class="fas fa-spinner fa-spin"></i> Loading tickets...
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this HTML for the ticket details modal -->
+    <div id="ticketDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTicketGame">Ticket Details</h2>
+                <span class="close-modal" onclick="closeTicketDetails()">&times;</span>
+            </div>
+            <div class="modal-body" id="modalTicketDetails">
+                <!-- Ticket details will be inserted here -->
             </div>
         </div>
     </div>
@@ -784,7 +918,7 @@
                     const statusText = status.charAt(0).toUpperCase() + status.slice(1);
                     
                     ticketsHTML += `
-                        <div class="ticket-card" data-status="${status}">
+                        <div class="ticket-card" data-status="${status}" onclick="viewTicketDetails('${ticket._id}')">
                             <div class="ticket-header">
                                 <div class="ticket-game">${ticket.game}</div>
                                 <div class="ticket-status ${statusClass}">${statusText}</div>
@@ -807,18 +941,13 @@
                                     <div class="ticket-value">${ticket.quantity}</div>
                                 </div>
                                 <div class="ticket-info">
-                                    <div class="ticket-label">Price Range</div>
-                                    <div class="ticket-value">${ticket.priceRange || 'N/A'}</div>
+                                    <div class="ticket-label">Base Price</div>
+                                    <div class="ticket-value">$${parseFloat(ticket.basePrice).toFixed(2)}</div>
                                 </div>
                                 <div class="ticket-info">
                                     <div class="ticket-label">Total Price</div>
                                     <div class="ticket-value">$${parseFloat(ticket.totalPrice).toFixed(2)}</div>
                                 </div>
-                            </div>
-                            <div class="ticket-actions">
-                                <button class="ticket-btn secondary" onclick="viewTicketDetails('${ticket._id}')">
-                                    <i class="fas fa-eye"></i> Details
-                                </button>
                             </div>
                         </div>
                     `;
@@ -895,11 +1024,122 @@
             });
         }
 
-        // Placeholder for ticket details view
-        function viewTicketDetails(ticketId) {
-            // This would typically open a modal with more details
-            alert(`Viewing details for ticket ${ticketId}`);
+        // Function to view ticket details
+        async function viewTicketDetails(ticketId) {
+            try {
+                // Fetch ticket details from the server
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ticket details');
+                }
+                
+                const ticket = await response.json();
+                
+                // Calculate discount percentage if applicable
+                let discountText = 'None';
+                let discountPercent = 0;
+                
+                if (ticket.quantity >= 5) {
+                    discountPercent = 10;
+                    discountText = '10% (5+ tickets)';
+                } else if (ticket.quantity >= 3) {
+                    discountPercent = 5;
+                    discountText = '5% (3-4 tickets)';
+                }
+                
+                // Update modal content
+                document.getElementById('modalTicketGame').textContent = ticket.game;
+                
+                const statusText = ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1);
+                
+                const modalContent = `
+                    <div class="ticket-detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Date Requested</div>
+                            <div class="detail-value">${formatDate(ticket.timestamp)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-${ticket.status.toLowerCase()}">${statusText}</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Section Type</div>
+                            <div class="detail-value">${ticket.sectionType}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Section</div>
+                            <div class="detail-value">${ticket.section}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Quantity</div>
+                            <div class="detail-value">${ticket.quantity} ticket${ticket.quantity > 1 ? 's' : ''}</div>
+                        </div>
+                        ${ticket.adminNotes ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Admin Notes</div>
+                            <div class="detail-value">${ticket.adminNotes}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="price-breakdown">
+                        <div class="price-breakdown-title">
+                            <i class="fas fa-calculator"></i> Price Breakdown
+                        </div>
+                        <div class="price-item">
+                            <span>Base Price:</span>
+                            <span>$${parseFloat(ticket.basePrice).toFixed(2)} per ticket</span>
+                        </div>
+                        <div class="price-item">
+                            <span>Quantity:</span>
+                            <span>${ticket.quantity} tickets</span>
+                        </div>
+                        <div class="price-item">
+                            <span>Discount Applied:</span>
+                            <span>${discountText}</span>
+                        </div>
+                        <div class="price-total">
+                            <span>Total Price:</span>
+                            <span>$${parseFloat(ticket.totalPrice).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    ${ticket.specialRequests ? `
+                    <div class="special-requests">
+                        <h3>Special Requests</h3>
+                        <p>${ticket.specialRequests}</p>
+                    </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('modalTicketDetails').innerHTML = modalContent;
+                
+                // Show the modal
+                document.getElementById('ticketDetailsModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error fetching ticket details:', error);
+                alert('Failed to load ticket details. Please try again.');
+            }
         }
+
+        // Function to close the ticket details modal
+        function closeTicketDetails() {
+            document.getElementById('ticketDetailsModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('ticketDetailsModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
 
         // Function to toggle edit mode
         function toggleEdit() {
