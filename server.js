@@ -9,7 +9,7 @@ const User = require('./models/User');
 const Ticket = require('./models/Ticket');
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 // Connect to MongoDB
 connectDB();
@@ -753,6 +753,23 @@ app.get('/api/check-admin', (req, res) => {
         console.error('Exception in admin check:', error);
         res.status(500).json({ isAdmin: false, message: 'Server error' });
     }
+});
+
+// Route handlers for serving HTML files
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(__dirname, 'profile.html'));
+});
+
+app.get('/getTickets', (req, res) => {
+    res.sendFile(path.join(__dirname, 'getTickets.html'));
 });
 
 // Start server
