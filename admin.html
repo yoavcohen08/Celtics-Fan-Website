@@ -503,7 +503,7 @@
 
         /* Ticket History Panel */
         .ticket-history-row {
-            background-color: #f9f9f9;
+            background-color: transparent;
         }
         
         .ticket-history-panel {
@@ -558,7 +558,7 @@
             overflow: hidden;
             border: 1px solid rgba(186, 150, 83, 0.2);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             position: relative;
         }
         
@@ -994,29 +994,75 @@
             margin-bottom: 15px;
         }
 
+        .ticket-filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
         .ticket-filter-btn {
             background-color: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #ccc;
-            padding: 5px 12px;
+            padding: 8px 16px;
             border-radius: 5px;
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
+            transition: all 0.2s ease;
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 5px;
         }
 
-        .ticket-filter-btn:hover {
-            background-color: rgba(186, 150, 83, 0.1);
-            border-color: rgba(186, 150, 83, 0.2);
-        }
-
-        .ticket-filter-btn.active {
+        /* Default button - All Tickets */
+        .ticket-filter-btn[data-filter="all"] {
             background-color: rgba(186, 150, 83, 0.2);
             border-color: rgba(186, 150, 83, 0.3);
             color: var(--celtics-gold);
+        }
+
+        .ticket-filter-btn[data-filter="all"]:hover {
+            background-color: rgba(186, 150, 83, 0.3);
+        }
+
+        /* Pending button - Yellow */
+        .ticket-filter-btn[data-filter="pending"] {
+            background-color: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+            color: #f1c40f;
+        }
+
+        .ticket-filter-btn[data-filter="pending"]:hover {
+            background-color: rgba(255, 193, 7, 0.3);
+        }
+
+        /* Approved button - Green */
+        .ticket-filter-btn[data-filter="approved"] {
+            background-color: rgba(40, 167, 69, 0.2);
+            border-color: rgba(40, 167, 69, 0.4);
+            color: #2ecc71;
+        }
+
+        .ticket-filter-btn[data-filter="approved"]:hover {
+            background-color: rgba(40, 167, 69, 0.3);
+        }
+
+        /* Rejected button - Red */
+        .ticket-filter-btn[data-filter="rejected"] {
+            background-color: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.4);
+            color: #e74c3c;
+        }
+
+        .ticket-filter-btn[data-filter="rejected"]:hover {
+            background-color: rgba(220, 53, 69, 0.3);
+        }
+
+        /* Active state for all buttons */
+        .ticket-filter-btn.active {
+            font-weight: 600;
+            box-shadow: 0 0 0 1px currentColor;
         }
 
         .ticket-status-dot {
@@ -1320,6 +1366,29 @@
             color: #999;
             margin-top: 3px;
             font-style: italic;
+        }
+
+        /* Styled X button for ticket history close */
+        .close-history-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .close-history-btn:hover {
+            color: #fff;
+            background-color: rgba(186, 150, 83, 0.3);
+            transform: rotate(90deg);
         }
     </style>
 </head>

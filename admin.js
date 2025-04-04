@@ -7,6 +7,7 @@ const usersPerPage = 10;
 let sortField = 'name';
 let sortDirection = 'asc';
 let activeTicketsUserId = null;
+let allTickets = [];
 
 // Function to show notification messages
 function showNotification(message, type = 'info') {
@@ -705,101 +706,306 @@ function updateUserCount(count) {
 // Toggle ticket history panel for a user
 function toggleTicketHistory(userId) {
     try {
-        console.log(`Toggling ticket history for user: ${userId}`);
+        // Check if the user exists
+        const user = allUsers.find(u => u._id === userId);
+        if (!user) {
+            showNotification('User not found', 'error');
+            return;
+        }
         
-        // Create ticket history panel if it doesn't exist
-        let historyRow = document.querySelector(`tr[data-ticket-history="${userId}"]`);
+        // Get the user's row
+        const userRow = document.querySelector(`tr[data-userid="${userId}"]`);
+        if (!userRow) {
+            showNotification('User row not found', 'error');
+            return;
+        }
         
-        if (!historyRow) {
-            // Get the user row
-            const userRow = document.querySelector(`tr[data-userid="${userId}"]`);
-            if (!userRow) {
-                console.error(`User row not found for ID: ${userId}`);
-                showNotification('Error: User row not found', 'error');
-                return;
-            }
-            
-            // Get user name
-            const nameCell = userRow.querySelector('td:first-child');
-            const userName = nameCell ? nameCell.textContent.trim() : 'User';
-            
-            console.log(`Creating ticket history panel for ${userName}`);
-            
-            // Create history row
-            historyRow = document.createElement('tr');
-            historyRow.className = 'ticket-history-row';
-            historyRow.setAttribute('data-ticket-history', userId);
-            
-            // Create history cell that spans all columns
-            const historyCell = document.createElement('td');
-            historyCell.colSpan = 5;
-            
-            // Create history panel content
-            historyCell.innerHTML = `
-                <div class="ticket-history-panel">
-                    <div class="ticket-history-header">
-                        <h3 class="ticket-history-title">
-                            <i class="fas fa-ticket-alt"></i>
-                            Ticket History for ${userName}
-                            <span class="ticket-count" id="ticket-count-${userId}">0</span>
-                        </h3>
-                        <button class="close-btn" onclick="toggleTicketHistory('${userId}')" title="Close Ticket History">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="ticket-filters">
-                        <button class="ticket-filter-btn active" data-filter="all" onclick="filterUserTickets('${userId}', 'all')">
-                            <span class="ticket-status-dot status-all"></span> All
-                        </button>
-                        <button class="ticket-filter-btn" data-filter="available" onclick="filterUserTickets('${userId}', 'available')">
-                            <span class="ticket-status-dot status-available"></span> Available
-                        </button>
-                        <button class="ticket-filter-btn" data-filter="pending" onclick="filterUserTickets('${userId}', 'pending')">
-                            <span class="ticket-status-dot status-pending"></span> Pending
-                        </button>
-                        <button class="ticket-filter-btn" data-filter="sold" onclick="filterUserTickets('${userId}', 'sold')">
-                            <span class="ticket-status-dot status-sold"></span> Sold
-                        </button>
-                    </div>
-                    
-                    <div class="loading-container" id="tickets-loading-${userId}">
-                        <div class="loading-spinner"></div>
-                        <p>Loading tickets...</p>
-                    </div>
-                    
-                    <div class="tickets-grid" id="tickets-grid-${userId}" style="display: none;">
-                        <!-- Tickets will be loaded here -->
-                    </div>
-                    
-                    <div class="no-data" id="no-tickets-${userId}" style="display: none;">
-                        This user has not created any tickets yet.
-                    </div>
+        // Check if ticket history is already open
+        const existingHistoryRow = document.querySelector(`tr[data-ticket-history="${userId}"]`);
+        
+        // If history is already open, close it
+        if (existingHistoryRow) {
+            existingHistoryRow.remove();
+            return;
+        }
+        
+        // Create a new row for the ticket history
+        const historyRow = document.createElement('tr');
+        historyRow.className = 'ticket-history-row';
+        historyRow.setAttribute('data-ticket-history', userId);
+        
+        // Create a cell that spans all columns
+        const historyCell = document.createElement('td');
+        historyCell.setAttribute('colspan', '5');
+        
+        // Create the ticket history panel
+        historyCell.innerHTML = `
+            <div class="ticket-history-panel">
+                <div class="ticket-history-header">
+                    <h3 class="ticket-history-title">
+                        <i class="fas fa-ticket-alt"></i>
+                        Ticket History for ${user.firstName} ${user.lastName}
+                        <span class="ticket-count" id="ticket-count-${userId}">...</span>
+                    </h3>
+                    <button class="close-history-btn" onclick="toggleTicketHistory('${userId}')" title="Close ticket history">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-            `;
-            
-            historyRow.appendChild(historyCell);
-            
-            // Insert after user row
-            userRow.parentNode.insertBefore(historyRow, userRow.nextSibling);
-            
-            // Initially hidden
-            historyRow.style.display = 'none';
-        }
+                
+                <div class="ticket-filter-buttons">
+                    <button class="ticket-filter-btn active" data-filter="all" onclick="filterUserTickets('${userId}', 'all')">All Tickets</button>
+                    <button class="ticket-filter-btn" data-filter="pending" onclick="filterUserTickets('${userId}', 'pending')">Pending</button>
+                    <button class="ticket-filter-btn" data-filter="approved" onclick="filterUserTickets('${userId}', 'approved')">Approved</button>
+                    <button class="ticket-filter-btn" data-filter="rejected" onclick="filterUserTickets('${userId}', 'rejected')">Rejected</button>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div id="tickets-loading-${userId}" class="loading-container" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading tickets...</p>
+                </div>
+                
+                <!-- No tickets message -->
+                <div id="no-tickets-${userId}" class="no-data" style="display: none;">
+                    <i class="fas fa-ticket-alt"></i>
+                    No tickets found for this user.
+                </div>
+                
+                <!-- Tickets grid -->
+                <div id="tickets-grid-${userId}" class="tickets-grid" style="display: none;"></div>
+            </div>
+        `;
         
-        // Toggle visibility
-        if (historyRow.style.display === 'none') {
-            historyRow.style.display = '';
-            
-            // Load user's tickets
-            loadUserTickets(userId);
-        } else {
-            historyRow.style.display = 'none';
-        }
+        // Add the cell to the row
+        historyRow.appendChild(historyCell);
+        
+        // Insert after the user's row
+        userRow.parentNode.insertBefore(historyRow, userRow.nextSibling);
+        
+        // Load the user's tickets
+        loadUserTickets(userId);
         
     } catch (error) {
         console.error('Error toggling ticket history:', error);
         showNotification('Error showing ticket history', 'error');
+    }
+}
+
+// Load tickets for a specific user
+function loadUserTickets(userId) {
+    try {
+        console.log(`Loading tickets for user: ${userId}`);
+        
+        // Get elements
+        const loadingElement = document.getElementById(`tickets-loading-${userId}`);
+        const ticketsGrid = document.getElementById(`tickets-grid-${userId}`);
+        const noTicketsElement = document.getElementById(`no-tickets-${userId}`);
+        
+        // Show loading indicator
+        if (loadingElement) loadingElement.style.display = 'block';
+        if (ticketsGrid) ticketsGrid.style.display = 'none';
+        if (noTicketsElement) noTicketsElement.style.display = 'none';
+        
+        // Update ticket count with loading state
+        const ticketCountElement = document.getElementById(`ticket-count-${userId}`);
+        if (ticketCountElement) {
+            ticketCountElement.textContent = 'Loading...';
+        }
+        
+        // Make API request to fetch tickets for this user
+        fetch(`/api/admin/tickets/${userId}`, {
+            method: 'GET',
+            credentials: 'include'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch tickets (Status: ${response.status})`);
+            }
+            return response.json();
+        })
+        .then(tickets => {
+            console.log(`Loaded ${tickets.length} tickets for user ${userId}:`, tickets);
+            
+            // Hide loading indicator
+            if (loadingElement) loadingElement.style.display = 'none';
+            
+            // Show tickets grid if we have tickets
+            if (ticketsGrid) {
+                ticketsGrid.style.display = 'grid';
+                
+                // Clear previous tickets
+                ticketsGrid.innerHTML = '';
+                
+                // Update ticket count
+                if (ticketCountElement) {
+                    ticketCountElement.textContent = tickets.length;
+                }
+                
+                // Display tickets
+                if (tickets.length === 0) {
+                    if (noTicketsElement) {
+                        noTicketsElement.style.display = 'block';
+                    }
+                    return;
+                }
+                
+                // Add ticket cards to the grid
+                tickets.forEach(ticket => {
+                    // Format date
+                    let ticketDate = 'N/A';
+                    if (ticket.timestamp) {
+                        ticketDate = new Date(ticket.timestamp).toLocaleDateString();
+                    } else if (ticket.createdAt) {
+                        ticketDate = new Date(ticket.createdAt).toLocaleDateString();
+                    } else if (ticket.date) {
+                        ticketDate = new Date(ticket.date).toLocaleDateString();
+                    }
+                    
+                    // Create status badge class based on status
+                    let statusClass = '';
+                    let statusText = '';
+                    
+                    switch(ticket.status?.toLowerCase()) {
+                        case 'pending':
+                            statusClass = 'status-pending';
+                            statusText = 'PENDING';
+                            break;
+                        case 'approved':
+                            statusClass = 'status-approved';
+                            statusText = 'APPROVED';
+                            break;
+                        case 'rejected':
+                            statusClass = 'status-rejected';
+                            statusText = 'REJECTED';
+                            break;
+                        default:
+                            statusClass = 'status-pending';
+                            statusText = 'PENDING';
+                    }
+                    
+                    // Create ticket card element
+                    const ticketCard = document.createElement('div');
+                    ticketCard.className = 'ticket-card';
+                    ticketCard.setAttribute('data-ticket-id', ticket._id);
+                    ticketCard.setAttribute('data-user-id', ticket.userId);
+                    ticketCard.setAttribute('data-status', ticket.status || 'pending');
+                    
+                    ticketCard.innerHTML = `
+                        <div class="ticket-header">
+                            <h3>${ticket.game || 'No Game Specified'}</h3>
+                            <div class="ticket-date">${ticketDate}</div>
+                        </div>
+                        <div class="ticket-details">
+                            <div class="status-badge ${statusClass}">${statusText}</div>
+                            <div class="ticket-info-row">
+                                <span class="info-label">Section Type:</span>
+                                <span class="info-value">${ticket.sectionType || 'N/A'}</span>
+                            </div>
+                            <div class="ticket-info-row">
+                                <span class="info-label">Section:</span>
+                                <span class="info-value">${ticket.section || 'N/A'}</span>
+                            </div>
+                            <div class="ticket-info-row">
+                                <span class="info-label">Quantity:</span>
+                                <span class="info-value">${ticket.quantity || '1'}</span>
+                            </div>
+                            <div class="ticket-info-row price-row">
+                                <span class="info-label">Price:</span>
+                                <span class="info-value price">$${(ticket.totalPrice || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-actions">
+                            <button class="btn edit-btn" onclick="openEditTicketModal('${ticket._id}')">
+                                <i class="fas fa-edit"></i> EDIT
+                            </button>
+                            <button class="btn delete-btn" onclick="confirmDeleteTicket('${ticket._id}')">
+                                <i class="fas fa-trash-alt"></i> DELETE
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add ticket card to grid
+                    ticketsGrid.appendChild(ticketCard);
+                });
+                
+                // Apply current filter (if any)
+                const activeFilterBtn = document.querySelector(`tr[data-ticket-history="${userId}"] .ticket-filter-btn.active`);
+                if (activeFilterBtn) {
+                    filterUserTickets(userId, activeFilterBtn.dataset.filter);
+                }
+            }
+        })
+        .catch(error => {
+            console.error(`Error loading tickets for user ${userId}:`, error);
+            
+            // Hide loading indicator
+            if (loadingElement) loadingElement.style.display = 'none';
+            
+            // Show error message
+            if (noTicketsElement) {
+                noTicketsElement.style.display = 'block';
+                noTicketsElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading tickets: ${error.message}
+                `;
+            }
+            
+            // Update ticket count with error state
+            if (ticketCountElement) {
+                ticketCountElement.textContent = 'Error';
+            }
+            
+            showNotification(`Error loading tickets: ${error.message}`, 'error');
+        });
+    } catch (error) {
+        console.error(`Error in loadUserTickets function:`, error);
+        showNotification(`Error loading tickets: ${error.message}`, 'error');
+    }
+}
+
+// Filter user tickets by status
+function filterUserTickets(userId, status) {
+    try {
+        // Get the elements
+        const ticketHistory = document.querySelector(`tr[data-ticket-history="${userId}"]`);
+        if (!ticketHistory) return; // Exit if element doesn't exist
+        
+        // Update active filter button
+        const filterButtons = ticketHistory.querySelectorAll(`.ticket-filter-btn`);
+        if (filterButtons.length === 0) return; // Exit if no filter buttons
+        
+        filterButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === status);
+        });
+        
+        // Filter ticket cards
+        const ticketsGrid = document.getElementById(`tickets-grid-${userId}`);
+        if (!ticketsGrid) return; // Exit if tickets grid doesn't exist
+        
+        const ticketCards = ticketsGrid.querySelectorAll(`.ticket-card`);
+        let visibleCount = 0;
+        
+        ticketCards.forEach(card => {
+            const cardStatus = card.dataset.status;
+            const shouldShow = status === 'all' || cardStatus === status;
+            
+            card.style.display = shouldShow ? 'block' : 'none';
+            if (shouldShow) visibleCount++;
+        });
+        
+        // Show no results message if needed
+        const noTicketsElement = document.getElementById(`no-tickets-${userId}`);
+        if (noTicketsElement) {
+            if (visibleCount === 0 && ticketCards.length > 0) {
+                noTicketsElement.style.display = 'block';
+                noTicketsElement.textContent = `No ${status} tickets found for this user.`;
+            } else {
+                noTicketsElement.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error filtering tickets:', error);
+        showNotification('Error filtering tickets', 'error');
     }
 }
 
@@ -836,8 +1042,11 @@ function loadTickets() {
             // Hide loading indicator
             document.getElementById('tickets-loading').style.display = 'none';
             
+            // Store all tickets globally for filtering
+            allTickets = tickets;
+            
             // Display tickets
-            displayTickets(tickets);
+            filterAndDisplayTickets();
         })
         .catch(error => {
             console.error('Error loading tickets:', error);
@@ -864,6 +1073,56 @@ function loadTickets() {
             <i class="fas fa-exclamation-triangle"></i>
             An error occurred: ${error.message}
         `;
+    }
+}
+
+// Filter and display tickets based on search and status filter
+function filterAndDisplayTickets() {
+    try {
+        if (!allTickets) {
+            console.warn('Cannot filter tickets: allTickets array is not loaded yet');
+            return;
+        }
+        
+        // Get filter values
+        const searchQuery = document.getElementById('ticket-search')?.value?.toLowerCase().trim() || '';
+        const statusFilter = document.getElementById('status-filter')?.value || 'all';
+        
+        // Apply filters
+        const filteredTickets = allTickets.filter(ticket => {
+            // Status filter
+            if (statusFilter !== 'all' && ticket.status?.toLowerCase() !== statusFilter) {
+                return false;
+            }
+            
+            // Search filter
+            if (searchQuery) {
+                const game = ticket.game?.toLowerCase() || '';
+                const userName = ticket.userName?.toLowerCase() || '';
+                const section = ticket.section?.toLowerCase() || '';
+                const sectionType = ticket.sectionType?.toLowerCase() || '';
+                
+                return game.includes(searchQuery) ||
+                       userName.includes(searchQuery) ||
+                       section.includes(searchQuery) ||
+                       sectionType.includes(searchQuery);
+            }
+            
+            return true;
+        });
+        
+        // Display filtered tickets
+        displayTickets(filteredTickets);
+        
+        // Update filter buttons to show active state
+        const filterButtons = document.querySelectorAll('#tickets-tab .filter-btn');
+        filterButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === statusFilter);
+        });
+        
+    } catch (error) {
+        console.error('Error filtering tickets:', error);
+        showNotification('Error filtering tickets', 'error');
     }
 }
 
@@ -894,6 +1153,10 @@ function displayTickets(tickets) {
         // No tickets message
         if (!tickets || tickets.length === 0) {
             document.getElementById('no-tickets').style.display = 'block';
+            document.getElementById('no-tickets').innerHTML = `
+                <i class="fas fa-ticket-alt"></i>
+                No tickets found matching your criteria.
+            `;
             return;
         } else {
             document.getElementById('no-tickets').style.display = 'none';
@@ -955,10 +1218,6 @@ function displayTickets(tickets) {
                 <div class="ticket-details">
                     <div class="status-badge ${statusClass}">${statusText}</div>
                     <div class="ticket-info-row">
-                        <span class="info-label">User:</span>
-                        <span class="info-value">${ticket.userName || 'Unknown User'}</span>
-                    </div>
-                    <div class="ticket-info-row">
                         <span class="info-label">Section Type:</span>
                         <span class="info-value">${ticket.sectionType || 'N/A'}</span>
                     </div>
@@ -992,11 +1251,6 @@ function displayTickets(tickets) {
         console.error('Error displaying tickets:', error);
         showNotification('Error displaying tickets', 'error');
     }
-}
-
-// Filter user tickets by status
-function filterUserTickets(userId, status) {
-    // ... existing code ...
 }
 
 // Function to handle editing a user inline instead of in a modal
@@ -1327,8 +1581,18 @@ async function deleteTicket(ticketId) {
             `;
         }
         
+        // Get the userId from the ticket card
+        const userId = ticketElement?.getAttribute('data-user-id');
+        
+        // Choose the correct API endpoint based on whether we have the userId
+        let apiEndpoint = userId 
+            ? `/api/admin/tickets/${userId}/${ticketId}` 
+            : `/api/tickets/${ticketId}`;
+            
+        console.log(`Deleting ticket with ID: ${ticketId} using endpoint: ${apiEndpoint}`);
+        
         // Send delete request
-        const response = await fetch(`/api/tickets/${ticketId}`, {
+        const response = await fetch(apiEndpoint, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1337,7 +1601,8 @@ async function deleteTicket(ticketId) {
         });
         
         if (!response.ok) {
-            throw new Error('Failed to delete ticket');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete ticket');
         }
         
         // Show success notification
@@ -1641,109 +1906,6 @@ function updateTicketSections(ticketId) {
     calculateTicketPrice(ticketId);
 }
 
-// Save ticket edit
-function saveTicketEdit(ticketId) {
-    try {
-        const form = document.getElementById(`inline-ticket-edit-${ticketId}`);
-        if (!form) {
-            showNotification('Edit form not found', 'error');
-            return;
-        }
-        
-        // Get form data
-        const formData = new FormData(form);
-        const ticketData = Object.fromEntries(formData.entries());
-        
-        // Validate required fields
-        if (!ticketData.game || !ticketData.sectionType || !ticketData.section || 
-            !ticketData.quantity || !ticketData.status) {
-            showNotification('Please fill in all required fields', 'error');
-            return;
-        }
-        
-        // Ensure we're using the latest calculated price
-        const priceInput = document.getElementById(`edit-total-price-input-${ticketId}`);
-        const basePriceSpan = document.getElementById(`edit-base-price-${ticketId}`);
-        const serviceFeeSpan = document.getElementById(`edit-service-fee-${ticketId}`);
-        const processingFeeSpan = document.getElementById(`edit-processing-fee-${ticketId}`);
-        
-        // Get price values from the display elements
-        if (priceInput) {
-            ticketData.totalPrice = parseFloat(priceInput.value);
-        }
-        
-        if (basePriceSpan) {
-            const basePriceText = basePriceSpan.textContent.replace('$', '');
-            ticketData.basePrice = parseFloat(basePriceText);
-        }
-        
-        if (serviceFeeSpan) {
-            const serviceFeeText = serviceFeeSpan.textContent.replace('$', '');
-            ticketData.serviceFee = parseFloat(serviceFeeText);
-        }
-        
-        if (processingFeeSpan) {
-            const processingFeeText = processingFeeSpan.textContent.replace('$', '');
-            ticketData.processingFee = parseFloat(processingFeeText);
-        }
-        
-        // Convert numeric fields
-        ticketData.quantity = parseInt(ticketData.quantity);
-        ticketData.totalPrice = parseFloat(ticketData.totalPrice);
-        ticketData.basePrice = parseFloat(ticketData.basePrice);
-        ticketData.serviceFee = parseFloat(ticketData.serviceFee);
-        ticketData.processingFee = parseFloat(ticketData.processingFee);
-        
-        // Show saving indicator
-        showNotification('Saving changes...', 'info');
-        
-        console.log('Saving ticket with data:', ticketData);
-        
-        // Send update request
-        fetch(`/api/tickets/${ticketId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(ticketData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to update ticket');
-            }
-            return response.json();
-        })
-        .then(result => {
-            showNotification('Ticket updated successfully', 'success');
-            
-            // If in tickets tab, reload all tickets
-            if (document.getElementById('ticketsTab').classList.contains('active')) {
-                loadTickets();
-            } else {
-                // Try to find the user ID in case we're in a user's ticket history
-                const ticketCard = document.querySelector(`.ticket-card[data-ticket-id="${ticketId}"]`);
-                if (ticketCard) {
-                    const historyRow = ticketCard.closest('[data-ticket-history]');
-                    if (historyRow) {
-                        const userId = historyRow.getAttribute('data-ticket-history');
-                        if (userId) {
-                            loadUserTickets(userId);
-                        }
-                    }
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error updating ticket:', error);
-            showNotification('Error: ' + error.message, 'error');
-        });
-    } catch (error) {
-        console.error('Error saving ticket changes:', error);
-        showNotification('Error saving changes', 'error');
-    }
-}
-
 // Calculate ticket price
 function calculateTicketPrice(ticketId) {
     const sectionTypeSelect = document.getElementById(`edit-section-type-${ticketId}`);
@@ -1790,12 +1952,19 @@ function calculateTicketPrice(ticketId) {
     
     const serviceFee = basePrice * 0.15;
     const processingFee = 5;
-    const totalPrice = (basePrice + serviceFee + processingFee) * quantity * quantityMultiplier;
+    
+    // Calculate the total price correctly considering all factors
+    const baseTotal = basePrice * quantity;
+    const serviceFeeTotal = serviceFee * quantity;
+    const processingFeeTotal = processingFee * quantity;
+    const totalBeforeDiscount = baseTotal + serviceFeeTotal + processingFeeTotal;
+    const totalPrice = totalBeforeDiscount * quantityMultiplier;
     
     // Update ticket card with calculated price
     const ticketCard = document.querySelector(`.ticket-card[data-ticket-id="${ticketId}"]`);
     if (ticketCard) {
-        const priceDetails = ticketCard.querySelector('.price-details');
+        // Update price display in edit form
+        const priceDetails = document.querySelector('.price-details');
         if (priceDetails) {
             const basePriceSpan = priceDetails.querySelector('#edit-base-price-' + ticketId);
             const serviceFeeSpan = priceDetails.querySelector('#edit-service-fee-' + ticketId);
@@ -1806,10 +1975,23 @@ function calculateTicketPrice(ticketId) {
             if (basePriceSpan) basePriceSpan.textContent = '$' + basePrice.toFixed(2);
             if (serviceFeeSpan) serviceFeeSpan.textContent = '$' + serviceFee.toFixed(2);
             if (processingFeeSpan) processingFeeSpan.textContent = '$' + processingFee.toFixed(2);
-            if (totalPriceSpan) totalPriceSpan.textContent = '$' + (totalPrice).toFixed(2);
+            if (totalPriceSpan) totalPriceSpan.textContent = '$' + totalPrice.toFixed(2);
             if (totalPriceInput) totalPriceInput.value = totalPrice.toFixed(2);
         }
+        
+        // Also update the visible price on the ticket card itself for consistency
+        const priceElement = ticketCard.querySelector('.price');
+        if (priceElement) {
+            priceElement.textContent = '$' + totalPrice.toFixed(2);
+        }
     }
+    
+    return {
+        basePrice: basePrice,
+        serviceFee: serviceFee,
+        processingFee: processingFee,
+        totalPrice: totalPrice
+    };
 }
 
 // Clear notifications
@@ -1821,5 +2003,162 @@ function clearNotifications() {
             notification.remove();
         }, 300);
     });
+}
+
+// Initialize tickets section with event listeners
+function initializeTicketsSection() {
+    try {
+        console.log('Initializing tickets section');
+        
+        // Add search input event listener
+        const searchInput = document.getElementById('ticket-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                filterAndDisplayTickets();
+            });
+        }
+        
+        // Add status filter dropdown event listener
+        const statusFilter = document.getElementById('status-filter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                filterAndDisplayTickets();
+            });
+        }
+        
+        // Add filter buttons event listeners
+        const filterButtons = document.querySelectorAll('.ticket-filter-buttons .filter-btn');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update status filter dropdown value
+                if (statusFilter) {
+                    statusFilter.value = btn.dataset.filter;
+                }
+                filterAndDisplayTickets();
+            });
+        });
+        
+        // Load tickets initially
+        loadTickets();
+        
+    } catch (error) {
+        console.error('Error initializing tickets section:', error);
+        showNotification('Error initializing tickets section', 'error');
+    }
+}
+
+// Make sure to initialize tickets section when the tab is first shown
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're already on the tickets tab
+    if (document.getElementById('ticketsTab').classList.contains('active')) {
+        initializeTicketsSection();
+    }
+    
+    // Add event listener for tab switching
+    const ticketsTab = document.querySelector('[data-tab="ticketsTab"]');
+    if (ticketsTab) {
+        ticketsTab.addEventListener('click', function() {
+            initializeTicketsSection();
+        });
+    }
+});
+
+// Save ticket edit
+function saveTicketEdit(ticketId) {
+    try {
+        const form = document.getElementById(`inline-ticket-edit-${ticketId}`);
+        if (!form) {
+            showNotification('Edit form not found', 'error');
+            return;
+        }
+        
+        // Get form data
+        const formData = new FormData(form);
+        const ticketData = Object.fromEntries(formData.entries());
+        
+        // Validate required fields
+        if (!ticketData.game || !ticketData.sectionType || !ticketData.section || 
+            !ticketData.quantity || !ticketData.status) {
+            showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Get the calculated prices directly from our function
+        const priceCalculation = calculateTicketPrice(ticketId);
+        if (!priceCalculation) {
+            showNotification('Error calculating ticket price', 'error');
+            return;
+        }
+        
+        // Update ticket data with calculated values
+        ticketData.basePrice = priceCalculation.basePrice;
+        ticketData.serviceFee = priceCalculation.serviceFee;
+        ticketData.processingFee = priceCalculation.processingFee;
+        ticketData.totalPrice = priceCalculation.totalPrice;
+        
+        // Convert numeric fields
+        ticketData.quantity = parseInt(ticketData.quantity);
+        ticketData.totalPrice = parseFloat(ticketData.totalPrice);
+        ticketData.basePrice = parseFloat(ticketData.basePrice);
+        ticketData.serviceFee = parseFloat(ticketData.serviceFee);
+        ticketData.processingFee = parseFloat(ticketData.processingFee);
+        
+        // Show saving indicator
+        showNotification('Saving changes...', 'info');
+        
+        console.log('Saving ticket with data:', ticketData);
+        
+        // Send update request
+        fetch(`/api/tickets/${ticketId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(ticketData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to update ticket');
+            }
+            return response.json();
+        })
+        .then(result => {
+            showNotification('Ticket updated successfully', 'success');
+            
+            // Also update the visible price on the card
+            const ticketCard = document.querySelector(`.ticket-card[data-ticket-id="${ticketId}"]`);
+            if (ticketCard) {
+                const priceElement = ticketCard.querySelector('.price');
+                if (priceElement) {
+                    priceElement.textContent = '$' + ticketData.totalPrice.toFixed(2);
+                }
+            }
+            
+            // If in tickets tab, reload all tickets
+            if (document.getElementById('ticketsTab').classList.contains('active')) {
+                loadTickets();
+            } else {
+                // Try to find the user ID in case we're in a user's ticket history
+                const ticketCard = document.querySelector(`.ticket-card[data-ticket-id="${ticketId}"]`);
+                if (ticketCard) {
+                    const historyRow = ticketCard.closest('[data-ticket-history]');
+                    if (historyRow) {
+                        const userId = historyRow.getAttribute('data-ticket-history');
+                        if (userId) {
+                            loadUserTickets(userId);
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating ticket:', error);
+            showNotification('Error: ' + error.message, 'error');
+        });
+    } catch (error) {
+        console.error('Error saving ticket changes:', error);
+        showNotification('Error saving changes', 'error');
+    }
 } 
 
