@@ -1336,7 +1336,34 @@
             const processingFee = parseFloat(document.getElementById('processingFee').textContent.replace('$', '')) || 0;
             const totalPrice = parseFloat(document.getElementById('totalPrice').textContent.replace('$', '')) || 0;
             
-            // Add these to the ticket data
+            // Format section type to match the backend expectations
+            // The server expects: Floor, Vip, Lower, Mid, Upper, Special
+            let formattedSectionType = ticketData.sectionType;
+            switch(ticketData.sectionType) {
+                case 'floor':
+                    formattedSectionType = 'Floor';
+                    break;
+                case 'vip':
+                    formattedSectionType = 'Vip';
+                    break;  
+                case 'lower':
+                    formattedSectionType = 'Lower';
+                    break;
+                case 'mid':
+                    formattedSectionType = 'Mid';
+                    break;
+                case 'upper':
+                    formattedSectionType = 'Upper';
+                    break;
+                case 'special':
+                    formattedSectionType = 'Special';
+                    break;
+            }
+            
+            // Update the ticket data with formatted section type
+            ticketData.sectionType = formattedSectionType;
+            
+            // Add price information to the ticket data
             ticketData.basePrice = basePrice;
             ticketData.serviceFee = serviceFee;
             ticketData.processingFee = processingFee;
@@ -1370,7 +1397,9 @@
             document.getElementById('successMessage').style.display = 'none';
             
             try {
-                const response = await fetch('/api/tickets/request', {
+                console.log('Submitting ticket data:', JSON.stringify(ticketData));
+                
+                const response = await fetch('/api/tickets', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1391,7 +1420,7 @@
                         <div style="text-align: center; padding: 20px;">
                             <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 20px;"></i>
                             <h2 style="margin-bottom: 15px;">Request Submitted Successfully!</h2>
-                            <p>${data.message}</p>
+                            <p>${data.message || 'Your ticket request has been submitted successfully.'}</p>
                             <p>You'll be redirected to the home page in a few seconds...</p>
                             <div style="margin-top: 20px;">
                                 <div class="countdown" style="font-size: 24px; font-weight: bold;">5</div>
@@ -1431,9 +1460,12 @@
                 } else {
                     // Show error message
                     document.getElementById('errorMessage').innerHTML = `
-                        <i class="fas fa-exclamation-triangle"></i> ${data.message || 'Error submitting ticket request'}
+                        <i class="fas fa-exclamation-triangle"></i> ${data.error || data.message || 'Error submitting ticket request'}
                     `;
                     document.getElementById('errorMessage').style.display = 'block';
+                    
+                    // Scroll to error message
+                    document.getElementById('errorMessage').scrollIntoView({ behavior: 'smooth' });
                 }
             } catch (error) {
                 console.error('Error submitting ticket request:', error);
@@ -1441,6 +1473,9 @@
                     <i class="fas fa-exclamation-triangle"></i> Error connecting to server. Please try again later.
                 `;
                 document.getElementById('errorMessage').style.display = 'block';
+                
+                // Scroll to error message
+                document.getElementById('errorMessage').scrollIntoView({ behavior: 'smooth' });
             } finally {
                 // Re-enable form if there was an error
                 if (document.getElementById('errorMessage').style.display === 'block') {

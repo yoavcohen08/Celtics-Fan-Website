@@ -221,7 +221,13 @@ app.post('/auth/logout', (req, res) => {
 app.get('/api/user/profile', isAuthenticated, async (req, res) => {
     try {
         const user = await User.findById(req.session.user.id).select('-password');
-        res.json(user);
+        if (!user) {
+            // Although isAuthenticated should prevent this, handle it just in case
+            return res.status(404).json({ message: 'User not found' });
+        }
+        // Ensure the response includes isAuthenticated
+        const userProfile = user.toObject(); // Convert Mongoose doc to plain object
+        res.json({ ...userProfile, isAuthenticated: true });
     } catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({ message: 'Error fetching profile' });
@@ -258,29 +264,111 @@ app.get('/api/games', (req, res) => {
 });
 
 // Ticket request routes
-app.post('/api/tickets', isAuthenticated, async (req, res) => {
+app.post('/api/tickets', async (req, res) => {
     try {
+        // Check if user is authenticated
+        if (!req.session.user || !req.session.user.id) {
+            return res.status(401).json({ error: 'You must be logged in to create a ticket request' });
+        }
+        
+        // Get user info from database
+        const user = await User.findById(req.session.user.id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
         const { game, section, sectionType, quantity } = req.body;
         
-        // Create new ticket with required fields
+        // Validate input
+        if (!game || !section || !sectionType || !quantity) {
+            return res.status(400).json({ error: 'Please provide all required information' });
+        }
+        
+        // Format section type to match the enum values
+        let formattedSectionType;
+        switch(sectionType.toLowerCase()) {
+            case 'floor':
+                formattedSectionType = 'Floor';
+                break;
+            case 'vip':
+                formattedSectionType = 'VIP';
+                break;
+            case 'lower':
+                formattedSectionType = 'Lower';
+                break;
+            case 'mid':
+                formattedSectionType = 'Mid';
+                break;
+            case 'upper':
+                formattedSectionType = 'Upper';
+                break;
+            case 'special':
+                formattedSectionType = 'Special';
+                break;
+            default:
+                formattedSectionType = 'Special'; // Default to Special if unknown type
+        }
+        
+        // Calculate base price based on section type
+        let basePrice = 0;
+        switch(formattedSectionType) {
+            case 'Floor':
+                basePrice = 750;
+                break;
+            case 'VIP':
+                basePrice = 600;
+                break;
+            case 'Lower':
+                basePrice = 350;
+                break;
+            case 'Mid':
+                basePrice = 225;
+                break;
+            case 'Upper':
+                basePrice = 120;
+                break;
+            case 'Special':
+                basePrice = 500;
+                break;
+            default:
+                basePrice = 200;
+        }
+        
+        // Apply quantity discount
+        let quantityMultiplier = 1;
+        if (quantity >= 5) {
+            quantityMultiplier = 0.9; // 10% discount for 5+ tickets
+        } else if (quantity >= 3) {
+            quantityMultiplier = 0.95; // 5% discount for 3-4 tickets
+        }
+        
+        const serviceFee = basePrice * 0.15;
+        const processingFee = 5;
+        const totalPrice = (basePrice + serviceFee + processingFee) * quantity * quantityMultiplier;
+        
+        // Create ticket with user reference
         const ticket = new Ticket({
-            userId: req.session.user.id,
+            userId: user._id, // Use userId instead of user
+            userName: `${user.firstName} ${user.lastName}`,
             game,
             section,
-            sectionType,
-            quantity
+            sectionType: formattedSectionType,
+            quantity: parseInt(quantity),
+            status: "pending",
+            basePrice: basePrice,
+            totalPrice: totalPrice,
+            serviceFee: serviceFee,
+            processingFee: processingFee
         });
         
-        // Price will be calculated automatically via pre-save middleware
         await ticket.save();
-        
         res.status(201).json({
-            message: 'Ticket request submitted successfully',
-            ticket: ticket
+            message: "Ticket request submitted successfully!",
+            ticket
         });
     } catch (error) {
         console.error('Error creating ticket:', error);
-        res.status(500).json({ message: 'Error submitting ticket request' });
+        res.status(500).json({ error: 'Failed to create ticket request. Please try again.' });
     }
 });
 
@@ -361,7 +449,8 @@ app.get('/api/admin/users', isAdmin, async (req, res) => {
         const users = await User.find({}, '-password').sort({ firstName: 1 });
         res.json(users);
     } catch (error) {
-        console.error('Error fetching users:', error);
+        // Log the full error object for more details
+        console.error('Detailed error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch users. Please try again.' });
     }
 });
@@ -386,7 +475,9 @@ app.get('/api/admin/users/:id', isAdmin, async (req, res) => {
 // Update user (admin only)
 app.put('/api/admin/users/:id', isAdmin, async (req, res) => {
     try {
-        const { firstName, lastName, email, phone, location } = req.body;
+        const { firstName, lastName, email, phone, location, isAdmin } = req.body;
+        
+        console.log('Updating user with data:', req.body);
         
         // Input validation
         if (!firstName || !lastName || !email) {
@@ -406,14 +497,35 @@ app.put('/api/admin/users/:id', isAdmin, async (req, res) => {
             }
         }
 
+        // Prevent admin from demoting themselves
+        if (req.session.user.id === user._id.toString() && isAdmin === false && user.isAdmin === true) {
+            return res.status(403).json({ 
+                error: 'You cannot remove your own admin privileges', 
+                user: { ...user.toObject(), password: undefined }
+            });
+        }
+
         user.firstName = firstName;
         user.lastName = lastName;
         user.email = email;
         user.phone = phone;
         user.location = location;
+        
+        // Only update isAdmin if it's explicitly included in the request
+        if (isAdmin !== undefined) {
+            console.log(`Updating isAdmin status to: ${isAdmin}`);
+            user.isAdmin = isAdmin;
+        }
 
         await user.save();
-        res.json({ message: 'User updated successfully', user: { ...user.toObject(), password: undefined } });
+        console.log('User updated successfully:', { id: user._id, isAdmin: user.isAdmin });
+        res.json({ 
+            message: 'User updated successfully', 
+            user: { 
+                ...user.toObject(), 
+                password: undefined 
+            } 
+        });
     } catch (error) {
         console.error('Error updating user:', error);
         if (error.kind === 'ObjectId') {
@@ -444,6 +556,20 @@ app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Invalid user ID format' });
         }
         res.status(500).json({ error: 'Failed to delete user. Please try again.' });
+    }
+});
+
+// Get tickets for a specific user (for admin)
+app.get('/api/admin/users/:userId/tickets', isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const tickets = await Ticket.find({ userId }).sort({ createdAt: -1 });
+        
+        res.json(tickets);
+    } catch (error) {
+        console.error('Error fetching user tickets:', error);
+        res.status(500).json({ error: 'Failed to fetch user tickets' });
     }
 });
 
@@ -718,8 +844,45 @@ app.get('/api/tickets/:id', isAuthenticated, async (req, res) => {
 // Admin route to get all tickets
 app.get('/api/admin/tickets', isAdmin, async (req, res) => {
     try {
-        const tickets = await Ticket.find({}).sort({ timestamp: -1 });
-        res.json(tickets);
+        console.log('Fetching all tickets for admin');
+        
+        // Fetch tickets and populate with user info
+        const tickets = await Ticket.find({})
+            .sort({ createdAt: -1 })
+            .lean(); // Use lean to get plain JS objects which are easier to modify
+        
+        // Get user information for each ticket
+        const ticketsWithUserInfo = await Promise.all(
+            tickets.map(async (ticket) => {
+                try {
+                    if (ticket.userId) {
+                        const user = await User.findById(ticket.userId).lean();
+                        if (user) {
+                            return {
+                                ...ticket,
+                                userName: `${user.firstName} ${user.lastName}`,
+                                userEmail: user.email
+                            };
+                        }
+                    }
+                    return {
+                        ...ticket,
+                        userName: 'Unknown User',
+                        userEmail: 'No email'
+                    };
+                } catch (err) {
+                    console.error(`Error getting user for ticket ${ticket._id}:`, err);
+                    return {
+                        ...ticket,
+                        userName: 'Error retrieving user',
+                        userEmail: 'Error'
+                    };
+                }
+            })
+        );
+        
+        console.log(`Found ${ticketsWithUserInfo.length} tickets`);
+        res.json(ticketsWithUserInfo);
     } catch (error) {
         console.error('Error fetching all tickets:', error);
         res.status(500).json({ message: 'Error fetching tickets' });
@@ -757,7 +920,7 @@ app.get('/api/check-admin', (req, res) => {
 
 // Route handlers for serving HTML files
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'MYweb.html'));
 });
 
 app.get('/admin', (req, res) => {
