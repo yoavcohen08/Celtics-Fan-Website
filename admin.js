@@ -9,6 +9,9 @@ let sortDirection = 'asc';
 let activeTicketsUserId = null;
 let allTickets = [];
 
+// Check if server is already initialized to prevent duplicate tickets loading
+let serverInitialized = false;
+
 // Function to show notification messages
 function showNotification(message, type = 'info') {
     // Create notification container if it doesn't exist
@@ -63,49 +66,84 @@ document.addEventListener('DOMContentLoaded', function() {
         // This is a safer initialization method to make sure everything is loaded
         console.log("DOM Content Loaded - Initializing admin dashboard");
         
-        // Initialize any event listeners only if the elements exist
-        const userSearchElement = document.getElementById('user-search');
-        const roleFilterElement = document.getElementById('role-filter');
-        
-        if (userSearchElement) {
-            userSearchElement.addEventListener('input', filterUsers);
-            console.log("Added event listener to user search");
-        } else {
-            console.error("Could not find user-search element");
+        if (serverInitialized) {
+            console.log("Server already initialized, skipping duplicate initialization");
+            return;
         }
         
-        if (roleFilterElement) {
-            roleFilterElement.addEventListener('change', filterUsers);
-            console.log("Added event listener to role filter");
-        } else {
-            console.error("Could not find role-filter element");
+        serverInitialized = true;
+        
+        // Setup tabs
+        const userTab = document.querySelector('[data-tab="users"]');
+        const ticketsTab = document.querySelector('[data-tab="tickets"]');
+        
+        if (userTab) {
+            userTab.addEventListener('click', function() {
+                switchTab('users');
+            });
         }
         
-        // Check if all critical elements exist
-        const criticalElements = [
-            'users-table-body', 
-            'pagination-controls',
-            'user-count',
-            'no-data',
-            'users-loading'
-        ];
-        
-        let missingElements = [];
-        criticalElements.forEach(id => {
-            if (!document.getElementById(id)) {
-                missingElements.push(id);
-            }
-        });
-        
-        if (missingElements.length > 0) {
-            console.error("Missing critical elements:", missingElements);
-            showNotification(`Critical elements missing: ${missingElements.join(', ')}`, 'error');
-        } else {
-            console.log("All critical elements found");
+        if (ticketsTab) {
+            ticketsTab.addEventListener('click', function() {
+                switchTab('tickets');
+            });
         }
         
-        // Now check admin status
-        checkAdminStatus();
+        // Initialize event listeners for user search and filter
+        const userSearch = document.getElementById('user-search');
+        const roleFilter = document.getElementById('role-filter');
+        
+        if (userSearch) {
+            console.log("Setting up user search listener");
+            userSearch.addEventListener('input', function() {
+                filterUsers();
+            });
+        } else {
+            console.error("User search element not found");
+        }
+        
+        if (roleFilter) {
+            console.log("Setting up role filter listener");
+            roleFilter.addEventListener('change', function() {
+                filterUsers();
+            });
+        } else {
+            console.error("Role filter element not found");
+        }
+        
+        // Initialize event listeners for ticket filters
+        const ownerFilter = document.getElementById('ticket-owner-filter');
+        const gameFilter = document.getElementById('ticket-game-filter');
+        const sectionFilter = document.getElementById('ticket-section-filter');
+        const statusFilter = document.getElementById('ticket-status-filter');
+        
+        if (ownerFilter) {
+            ownerFilter.addEventListener('change', filterTickets);
+        }
+        
+        if (gameFilter) {
+            gameFilter.addEventListener('change', filterTickets);
+        }
+        
+        if (sectionFilter) {
+            sectionFilter.addEventListener('change', filterTickets);
+        }
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterTickets);
+        }
+        
+        // Load tickets only if we're starting on the tickets tab
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && activeTab.id === 'ticketsTab') {
+            // Add a slight delay to ensure everything is properly initialized
+            setTimeout(() => {
+                loadTickets();
+            }, 100);
+        } else {
+            // Otherwise, default to loading users
+            checkAdminStatus();
+        }
     } catch (error) {
         console.error("Error during initialization:", error);
         showNotification('Error initializing admin dashboard: ' + error.message, 'error');
@@ -317,65 +355,89 @@ function sortUsers(field, keepDirection = false) {
     displayUsers(getCurrentPageUsers(filteredUsers));
 }
 
-// Filter users based on search and role filter
-function filterUsers(query = '') {
+// Filter users based on search query and role
+function filterUsers() {
     try {
-        if (!allUsers) {
-            console.warn('Cannot filter users: allUsers array is not loaded yet');
+        const searchInput = document.getElementById('user-search');
+        const roleFilter = document.getElementById('role-filter');
+        
+        if (!searchInput || !roleFilter) {
+            console.error('Search input or role filter not found');
             return;
         }
         
-        const roleFilter = document.getElementById('role-filter');
-        const role = roleFilter ? roleFilter.value : 'all';
+        const query = searchInput.value || '';
+        const role = roleFilter.value;
         
-        // Process query
-        query = query.toLowerCase().trim();
+        console.log(`Filtering users with query: "${query}" and role: "${role}"`);
         
-        // Filter users based on search and role filter
-        let filteredUsers = allUsers.filter(user => {
-            // Role filter
-            if (role === 'admin' && !user.isAdmin) return false;
-            if (role === 'user' && user.isAdmin) return false;
-            
-            // Search filter
-            if (query) {
-                const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-                const email = user.email.toLowerCase();
-                const phone = user.phone ? user.phone.toLowerCase() : '';
-                const location = user.location ? user.location.toLowerCase() : '';
-                
-                return fullName.includes(query) || 
-                       email.includes(query) || 
-                       phone.includes(query) || 
-                       location.includes(query);
+        // Get all user rows
+        const userRows = document.querySelectorAll('#users-table-body tr');
+        
+        // Count how many users match the filter
+        let matchCount = 0;
+        const totalCount = userRows.length;
+        
+        userRows.forEach(row => {
+            // Skip if it's a loading or message row
+            if (row.classList.contains('loading-row') || row.querySelector('td[colspan]')) {
+                return;
             }
             
-            return true;
+            const name = row.querySelector('td:nth-child(1)')?.textContent || '';
+            const email = row.querySelector('td:nth-child(2)')?.textContent || '';
+            const phone = row.querySelector('td:nth-child(3)')?.textContent || '';
+            const location = row.querySelector('td:nth-child(4)')?.textContent || '';
+            
+            // Determine if user is admin based on badge in name cell
+            const isAdmin = row.querySelector('.admin-badge') !== null;
+            const userRole = isAdmin ? 'admin' : 'user';
+            
+            // Check if user matches the search query
+            const matchesQuery = !query || 
+                name.toLowerCase().includes(query.toLowerCase()) || 
+                email.toLowerCase().includes(query.toLowerCase()) || 
+                phone.toLowerCase().includes(query.toLowerCase()) || 
+                location.toLowerCase().includes(query.toLowerCase());
+                
+            // Check if user matches the role filter
+            const matchesRole = role === 'all' || 
+                (role === 'admin' && userRole === 'admin') || 
+                (role === 'user' && userRole === 'user');
+            
+            // Show/hide row based on filter match
+            if (matchesQuery && matchesRole) {
+                row.style.display = '';
+                matchCount++;
+            } else {
+                row.style.display = 'none';
+            }
         });
         
-        // Update current page to 1 when filter changes
-        currentPage = 1;
-        
-        // Display filtered users
-        displayUsers(getCurrentPageUsers(filteredUsers));
-        
-        // Update pagination
-        updatePagination(filteredUsers);
-        
-        // Update user count display
+        // Update user count
         const userCountElement = document.querySelector('.user-count');
         if (userCountElement) {
-            if (query || role !== 'all') {
-                userCountElement.innerHTML = 
-                    `<i class="fas fa-filter"></i> ${filteredUsers.length} of ${allUsers.length} Users`;
+            userCountElement.innerHTML = `
+                <i class="fas fa-users"></i> ${matchCount} of ${totalCount} Users
+            `;
+        }
+        
+        // Show message if no users match
+        const noUsersElement = document.getElementById('no-data');
+        if (noUsersElement) {
+            if (matchCount === 0 && !document.querySelector('.loading-row')) {
+                noUsersElement.style.display = 'block';
+                noUsersElement.innerHTML = `
+                    <i class="fas fa-users"></i>
+                    No users found matching your criteria.
+                `;
             } else {
-                userCountElement.innerHTML = 
-                    `<i class="fas fa-users"></i> ${allUsers.length} Users`;
+                noUsersElement.style.display = 'none';
             }
         }
     } catch (error) {
-        console.error('Error filtering users:', error);
-        showNotification('Error filtering users: ' + error.message, 'error');
+        console.error('Error in filterUsers function:', error);
+        showNotification(`Error filtering users: ${error.message}`, 'error');
     }
 }
 
@@ -883,6 +945,56 @@ function loadUserTickets(userId) {
                             statusText = 'PENDING';
                     }
                     
+                    // Calculate the correct price using the same algorithm as the edit form
+                    const sectionType = ticket.sectionType || '';
+                    const section = ticket.section || '';
+                    const quantity = parseInt(ticket.quantity) || 1;
+                    
+                    // Calculate base price based on section type
+                    let basePrice = 0;
+                    
+                    // Determine base price based on section type
+                    if (sectionType === 'Floor') {
+                        basePrice = 750;
+                    } else if (sectionType === 'VIP') {
+                        basePrice = 600;
+                    } else if (sectionType === 'Lower') {
+                        basePrice = 350;
+                    } else if (sectionType === 'Mid') {
+                        basePrice = 225;
+                    } else if (sectionType === 'Upper') {
+                        basePrice = 120;
+                    } else if (sectionType === 'Special') {
+                        basePrice = 500;
+                    }
+                    
+                    // Add price variations for premium sections
+                    if (['FL20', 'FL21'].includes(section)) basePrice += 100;
+                    if (['VIP12'].includes(section)) basePrice += 75;
+                    if (['12', '21'].includes(section)) basePrice += 50;
+                    if (['Garden Deck', 'Executive Suites'].includes(section)) basePrice += 150;
+                    
+                    // Apply quantity discount
+                    let quantityMultiplier = 1;
+                    if (quantity >= 5) {
+                        quantityMultiplier = 0.9;
+                    } else if (quantity >= 3) {
+                        quantityMultiplier = 0.95;
+                    }
+                    
+                    const serviceFee = basePrice * 0.15;
+                    const processingFee = 5;
+                    
+                    // Calculate the total price correctly
+                    const baseTotal = basePrice * quantity;
+                    const serviceFeeTotal = serviceFee * quantity;
+                    const processingFeeTotal = processingFee * quantity;
+                    const totalBeforeDiscount = baseTotal + serviceFeeTotal + processingFeeTotal;
+                    const calculatedTotalPrice = totalBeforeDiscount * quantityMultiplier;
+                    
+                    // Use the calculated price for consistency
+                    const displayPrice = calculatedTotalPrice;
+                    
                     // Create ticket card element
                     const ticketCard = document.createElement('div');
                     ticketCard.className = 'ticket-card';
@@ -893,7 +1005,7 @@ function loadUserTickets(userId) {
                     ticketCard.innerHTML = `
                         <div class="ticket-header">
                             <h3>${ticket.game || 'No Game Specified'}</h3>
-                            <div class="ticket-date">${ticketDate}</div>
+                            <div class="form-text text-muted ticket-date">${ticketDate}</div>
                         </div>
                         <div class="ticket-details">
                             <div class="status-badge ${statusClass}">${statusText}</div>
@@ -911,15 +1023,15 @@ function loadUserTickets(userId) {
                             </div>
                             <div class="ticket-info-row price-row">
                                 <span class="info-label">Price:</span>
-                                <span class="info-value price">$${(ticket.totalPrice || 0).toFixed(2)}</span>
+                                <span class="info-value price">$${displayPrice.toFixed(2)}</span>
                             </div>
                         </div>
                         <div class="ticket-actions">
                             <button class="btn edit-btn" onclick="openEditTicketModal('${ticket._id}')">
-                                <i class="fas fa-edit"></i> EDIT
+                                <i class="fas fa-edit"></i> Edit
                             </button>
                             <button class="btn delete-btn" onclick="confirmDeleteTicket('${ticket._id}')">
-                                <i class="fas fa-trash-alt"></i> DELETE
+                                <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         </div>
                     `;
@@ -1012,67 +1124,126 @@ function filterUserTickets(userId, status) {
 // Load tickets from the API
 function loadTickets() {
     try {
-        // Show loading indicator
-        document.getElementById('tickets-loading').style.display = 'block';
-        document.getElementById('tickets-grid').innerHTML = '';
-        document.getElementById('no-tickets').style.display = 'none';
+        console.log('Loading tickets for admin view');
+        
+        // Get container elements
+        const ticketsContainer = document.getElementById('tickets-container');
+        const ticketsGrid = document.getElementById('tickets-grid');
+        const loadingElement = document.getElementById('tickets-loading');
+        const noTicketsElement = document.getElementById('no-tickets');
+        
+        // Make sure we have all the elements we need
+        if (!ticketsContainer || !ticketsGrid) {
+            console.error('Tickets container or grid not found');
+            showNotification('Error: Required elements not found on page', 'error');
+            return;
+        }
+        
+        // Prevent multiple simultaneous load attempts
+        if (loadingElement && loadingElement.style.display === 'flex') {
+            console.log('Ticket loading already in progress, skipping duplicate request');
+            return;
+        }
+        
+        // Update loading state
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+        }
+        
+        // Hide no tickets message while loading
+        if (noTicketsElement) {
+            noTicketsElement.style.display = 'none';
+        }
+        
+        // Clear existing tickets to prevent duplicates
+        ticketsGrid.innerHTML = '';
         
         // Update ticket count with loading state
-        const ticketCount = document.getElementById('ticket-count');
-        if (ticketCount) {
-            ticketCount.innerHTML = `
+        const ticketCountElement = document.getElementById('ticket-count');
+        if (ticketCountElement) {
+            ticketCountElement.innerHTML = `
                 <i class="fas fa-ticket-alt"></i>
                 <span>Loading tickets...</span>
             `;
         }
         
-        // Fetch tickets data
+        // Fetch tickets from the server
         fetch('/api/admin/tickets', {
             credentials: 'include'
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch tickets');
+                throw new Error(`Failed to fetch tickets (Status: ${response.status})`);
             }
             return response.json();
         })
         .then(tickets => {
-            console.log('Loaded tickets:', tickets);
+            console.log(`Loaded ${tickets.length} tickets:`, tickets);
             
-            // Hide loading indicator
-            document.getElementById('tickets-loading').style.display = 'none';
-            
-            // Store all tickets globally for filtering
+            // Store tickets globally for filtering
             allTickets = tickets;
             
+            // Hide loading indicator
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            
+            // Update ticket count
+            if (ticketCountElement) {
+                ticketCountElement.innerHTML = `
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>${tickets.length}</span> Tickets
+                `;
+            }
+            
+            // If no tickets, show message
+            if (!tickets || tickets.length === 0) {
+                if (noTicketsElement) {
+                    noTicketsElement.style.display = 'block';
+                    noTicketsElement.innerHTML = `
+                        <i class="fas fa-ticket-alt"></i>
+                        No tickets found. Create a ticket to get started.
+                    `;
+                }
+                return;
+            }
+            
+            // Populate filter dropdowns with ticket data
+            populateTicketFilters(tickets);
+            
             // Display tickets
-            filterAndDisplayTickets();
+            displayTickets(tickets);
         })
         .catch(error => {
             console.error('Error loading tickets:', error);
-            document.getElementById('tickets-loading').style.display = 'none';
-            document.getElementById('no-tickets').style.display = 'block';
-            document.getElementById('no-tickets').innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                Error loading tickets: ${error.message}
-            `;
             
-            // Update ticket count with error state
-            if (ticketCount) {
-                ticketCount.innerHTML = `
-                    <i class="fas fa-ticket-alt"></i>
+            // Hide loading indicator
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            
+            // Update ticket count
+            if (ticketCountElement) {
+                ticketCountElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
                     <span>Error</span>
                 `;
             }
+            
+            // Show error message
+            if (noTicketsElement) {
+                noTicketsElement.style.display = 'block';
+                noTicketsElement.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading tickets: ${error.message}
+                `;
+            }
+            
+            showNotification(`Error loading tickets: ${error.message}`, 'error');
         });
     } catch (error) {
         console.error('Error in loadTickets function:', error);
-        document.getElementById('tickets-loading').style.display = 'none';
-        document.getElementById('no-tickets').style.display = 'block';
-        document.getElementById('no-tickets').innerHTML = `
-            <i class="fas fa-exclamation-triangle"></i>
-            An error occurred: ${error.message}
-        `;
+        showNotification(`Error: ${error.message}`, 'error');
     }
 }
 
@@ -1126,84 +1297,244 @@ function filterAndDisplayTickets() {
     }
 }
 
-// Display tickets in a grid layout
+// Display tickets in the grid
 function displayTickets(tickets) {
     try {
-        console.log('Displaying tickets:', tickets);
-        
-        // Get tickets container
         const ticketsGrid = document.getElementById('tickets-grid');
         if (!ticketsGrid) {
             console.error('Tickets grid not found');
             return;
         }
         
-        // Clear current tickets
+        // Clear any existing tickets to prevent duplicates
         ticketsGrid.innerHTML = '';
         
-        // Update total ticket count
-        const ticketCountElement = document.getElementById('ticket-count');
-        if (ticketCountElement) {
-            ticketCountElement.innerHTML = `
-                <i class="fas fa-ticket-alt"></i>
-                <span>${tickets.length}</span> Tickets
-            `;
-        }
+        // Fetch user data to display owner names
+        fetch('/api/admin/users', {
+            credentials: 'include'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch user data');
+            }
+            return response.json();
+        })
+        .then(users => {
+            console.log(`Displaying ${tickets.length} tickets with ${users.length} users`);
+            
+            // If no tickets, show message
+            if (tickets.length === 0) {
+                const noTicketsElement = document.getElementById('no-tickets');
+                if (noTicketsElement) {
+                    noTicketsElement.style.display = 'block';
+                }
+                return;
+            }
+            
+            // Track ticket IDs to prevent duplicates
+            const addedTicketIds = new Set();
+            
+            // Display each ticket
+            tickets.forEach(ticket => {
+                // Skip if this ticket ID has already been added
+                if (addedTicketIds.has(ticket._id)) {
+                    console.log(`Skipping duplicate ticket: ${ticket._id}`);
+                    return;
+                }
+                
+                // Add ticket ID to tracking set
+                addedTicketIds.add(ticket._id);
+                
+                // Find owner
+                const owner = users.find(user => user._id === ticket.userId);
+                const ownerName = owner 
+                    ? `${owner.firstName} ${owner.lastName}` 
+                    : 'Unknown User';
+                
+                // Format date
+                let ticketDate = 'N/A';
+                if (ticket.timestamp) {
+                    ticketDate = new Date(ticket.timestamp).toLocaleDateString();
+                } else if (ticket.createdAt) {
+                    ticketDate = new Date(ticket.createdAt).toLocaleDateString();
+                } else if (ticket.date) {
+                    ticketDate = new Date(ticket.date).toLocaleDateString();
+                }
+                
+                // Create status class
+                let statusClass, statusText;
+                switch(ticket.status?.toLowerCase()) {
+                    case 'approved': 
+                        statusClass = 'status-approved'; 
+                        statusText = 'Approved'; 
+                        break;
+                    case 'rejected': 
+                        statusClass = 'status-rejected'; 
+                        statusText = 'Rejected'; 
+                        break;
+                    case 'completed':
+                        statusClass = 'status-completed';
+                        statusText = 'Completed';
+                        break;
+                    default:
+                        statusClass = 'status-pending';
+                        statusText = 'Pending';
+                }
+                
+                // Calculate the correct price using the same algorithm as the edit form
+                const sectionType = ticket.sectionType || '';
+                const section = ticket.section || '';
+                const quantity = parseInt(ticket.quantity) || 1;
+                
+                // Calculate base price based on section type
+                let basePrice = 0;
+                
+                // Determine base price based on section type
+                if (sectionType === 'Floor') {
+                    basePrice = 750;
+                } else if (sectionType === 'VIP') {
+                    basePrice = 600;
+                } else if (sectionType === 'Lower') {
+                    basePrice = 350;
+                } else if (sectionType === 'Mid') {
+                    basePrice = 225;
+                } else if (sectionType === 'Upper') {
+                    basePrice = 120;
+                } else if (sectionType === 'Special') {
+                    basePrice = 500;
+                }
+                
+                // Create ticket card element
+                const ticketCard = document.createElement('div');
+                ticketCard.className = 'ticket-card';
+                ticketCard.setAttribute('data-ticket-id', ticket._id);
+                ticketCard.setAttribute('data-user-id', ticket.userId);
+                ticketCard.setAttribute('data-user-name', ownerName);
+                ticketCard.setAttribute('data-status', ticket.status || 'pending');
+                
+                ticketCard.innerHTML = `
+                    <div class="ticket-header">
+                        <h3>${ticket.game || 'No Game Specified'}</h3>
+                        <div class="form-text text-muted ticket-date">${ticketDate}</div>
+                    </div>
+                    <div class="ticket-details">
+                        <div class="ticket-owner">
+                            <span class="info-label"><i class="fas fa-user"></i> Owner:</span>
+                            <span class="info-value owner-name">${ownerName}</span>
+                        </div>
+                        <div class="status-badge ${statusClass}">${statusText}</div>
+                        <div class="ticket-info-row">
+                            <span class="info-label">Section Type:</span>
+                            <span class="info-value">${ticket.sectionType || 'N/A'}</span>
+                        </div>
+                        <div class="ticket-info-row">
+                            <span class="info-label">Section:</span>
+                            <span class="info-value">${ticket.section || 'N/A'}</span>
+                        </div>
+                        <div class="ticket-info-row">
+                            <span class="info-label">Quantity:</span>
+                            <span class="info-value">${ticket.quantity || '1'}</span>
+                        </div>
+                        <div class="ticket-info-row price-row">
+                            <span class="info-label">Price:</span>
+                            <span class="info-value price">$${ticket.totalPrice ? ticket.totalPrice.toFixed(2) : '0.00'}</span>
+                        </div>
+                    </div>
+                    <div class="ticket-actions">
+                        <button class="btn edit-btn" onclick="openEditTicketModal('${ticket._id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn delete-btn" onclick="confirmDeleteTicket('${ticket._id}')">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                // Add ticket card to grid
+                ticketsGrid.appendChild(ticketCard);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching user data for tickets:', error);
+            showNotification('Error loading ticket owner information', 'error');
+            
+            // Display tickets without owner info
+            displayTicketsWithoutOwners(tickets);
+        });
+    } catch (error) {
+        console.error('Error displaying tickets:', error);
+        showNotification('Error displaying tickets', 'error');
+    }
+}
+
+// Fallback function to display tickets without owner info
+function displayTicketsWithoutOwners(tickets) {
+    try {
+        const ticketsGrid = document.getElementById('tickets-grid');
+        if (!ticketsGrid) return;
         
-        // No tickets message
-        if (!tickets || tickets.length === 0) {
-            document.getElementById('no-tickets').style.display = 'block';
-            document.getElementById('no-tickets').innerHTML = `
-                <i class="fas fa-ticket-alt"></i>
-                No tickets found matching your criteria.
-            `;
-            return;
-        } else {
-            document.getElementById('no-tickets').style.display = 'none';
-        }
-        
-        // Add ticket cards
         tickets.forEach(ticket => {
-            // Get ticket date - try multiple properties
+            // Format date
             let ticketDate = 'N/A';
-            // Try different date properties in order of preference
             if (ticket.timestamp) {
                 ticketDate = new Date(ticket.timestamp).toLocaleDateString();
             } else if (ticket.createdAt) {
                 ticketDate = new Date(ticket.createdAt).toLocaleDateString();
             } else if (ticket.date) {
                 ticketDate = new Date(ticket.date).toLocaleDateString();
-            } else if (ticket.lastUpdated) {
-                ticketDate = new Date(ticket.lastUpdated).toLocaleDateString();
             }
             
-            // Create status badge class based on status
-            let statusClass = '';
-            let statusText = '';
-            
+            // Create status class
+            let statusClass, statusText;
             switch(ticket.status?.toLowerCase()) {
-                case 'pending':
-                    statusClass = 'status-pending';
-                    statusText = 'Pending';
+                case 'pending': 
+                    statusClass = 'status-pending'; 
+                    statusText = 'Pending'; 
                     break;
-                case 'approved':
-                    statusClass = 'status-approved';
-                    statusText = 'Approved';
+                case 'approved': 
+                    statusClass = 'status-approved'; 
+                    statusText = 'Approved'; 
                     break;
-                case 'rejected':
-                    statusClass = 'status-rejected';
-                    statusText = 'Rejected';
+                case 'rejected': 
+                    statusClass = 'status-rejected'; 
+                    statusText = 'Rejected'; 
                     break;
-                case 'completed':
-                    statusClass = 'status-completed';
-                    statusText = 'Completed';
-                    break;
-                default:
-                    statusClass = 'status-pending';
+                default: 
+                    statusClass = 'status-pending'; 
                     statusText = 'Pending';
             }
             
-            // Create ticket card element
+            // Calculate price
+            const sectionType = ticket.sectionType || '';
+            const section = ticket.section || '';
+            const quantity = parseInt(ticket.quantity) || 1;
+            
+            let basePrice = 0;
+            if (sectionType === 'Floor') basePrice = 750;
+            else if (sectionType === 'VIP') basePrice = 600;
+            else if (sectionType === 'Lower') basePrice = 350;
+            else if (sectionType === 'Mid') basePrice = 225;
+            else if (sectionType === 'Upper') basePrice = 120;
+            else if (sectionType === 'Special') basePrice = 500;
+            
+            if (['FL20', 'FL21'].includes(section)) basePrice += 100;
+            if (['VIP12'].includes(section)) basePrice += 75;
+            if (['12', '21'].includes(section)) basePrice += 50;
+            if (['Garden Deck', 'Executive Suites'].includes(section)) basePrice += 150;
+            
+            let quantityMultiplier = 1;
+            if (quantity >= 5) quantityMultiplier = 0.9;
+            else if (quantity >= 3) quantityMultiplier = 0.95;
+            
+            const serviceFee = basePrice * 0.15;
+            const processingFee = 5;
+            const baseTotal = basePrice * quantity;
+            const serviceFeeTotal = serviceFee * quantity;
+            const processingFeeTotal = processingFee * quantity;
+            const totalBeforeDiscount = baseTotal + serviceFeeTotal + processingFeeTotal;
+            const displayPrice = totalBeforeDiscount * quantityMultiplier;
+            
+            // Create ticket card
             const ticketCard = document.createElement('div');
             ticketCard.className = 'ticket-card';
             ticketCard.setAttribute('data-ticket-id', ticket._id);
@@ -1216,6 +1547,10 @@ function displayTickets(tickets) {
                     <div class="form-text text-muted ticket-date">${ticketDate}</div>
                 </div>
                 <div class="ticket-details">
+                    <div class="ticket-owner">
+                        <span class="info-label"><i class="fas fa-user"></i> Owner:</span>
+                        <span class="info-value owner-name">User ID: ${ticket.userId || 'Unknown'}</span>
+                    </div>
                     <div class="status-badge ${statusClass}">${statusText}</div>
                     <div class="ticket-info-row">
                         <span class="info-label">Section Type:</span>
@@ -1231,7 +1566,7 @@ function displayTickets(tickets) {
                     </div>
                     <div class="ticket-info-row price-row">
                         <span class="info-label">Price:</span>
-                        <span class="info-value price">$${(ticket.totalPrice || 0).toFixed(2)}</span>
+                        <span class="info-value price">$${displayPrice.toFixed(2)}</span>
                     </div>
                 </div>
                 <div class="ticket-actions">
@@ -1244,12 +1579,10 @@ function displayTickets(tickets) {
                 </div>
             `;
             
-            // Add ticket card to grid
             ticketsGrid.appendChild(ticketCard);
         });
     } catch (error) {
-        console.error('Error displaying tickets:', error);
-        showNotification('Error displaying tickets', 'error');
+        console.error('Error displaying tickets without owners:', error);
     }
 }
 
@@ -1270,6 +1603,15 @@ function openEditUserModal(userId) {
             return;
         }
         
+        // Check if edit form is already open
+        const existingEditRow = document.querySelector(`tr[data-edit-userid="${userId}"]`);
+        
+        // If edit form is already open, close it
+        if (existingEditRow) {
+            existingEditRow.remove();
+            return;
+        }
+        
         // Check if editing your own account and you're an admin
         const isCurrentAdmin = localStorage.getItem('adminId') === userId && user.isAdmin;
 
@@ -1281,58 +1623,69 @@ function openEditUserModal(userId) {
         // Create the edit form HTML
         editRow.innerHTML = `
             <td colspan="5">
-                <form class="inline-edit-form" id="edit-form-${userId}" onsubmit="event.preventDefault(); saveUserEdit('${userId}')">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-first-name-${userId}">First Name</label>
-                            <input type="text" id="edit-first-name-${userId}" value="${user.firstName || ''}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-last-name-${userId}">Last Name</label>
-                            <input type="text" id="edit-last-name-${userId}" value="${user.lastName || ''}" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-email-${userId}">Email</label>
-                            <input type="email" id="edit-email-${userId}" value="${user.email || ''}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-phone-${userId}">Phone</label>
-                            <input type="tel" id="edit-phone-${userId}" value="${user.phone || ''}">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-location-${userId}">Location</label>
-                            <input type="text" id="edit-location-${userId}" value="${user.location || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-admin-status-${userId}">Admin Status</label>
-                            <select id="edit-admin-status-${userId}" ${isCurrentAdmin ? 'disabled' : ''}>
-                                <option value="false" ${!user.isAdmin ? 'selected' : ''}>Regular User</option>
-                                <option value="true" ${user.isAdmin ? 'selected' : ''}>Admin</option>
-                            </select>
-                            ${isCurrentAdmin ? '<div class="admin-status-note">You cannot remove your own admin status</div>' : ''}
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="cancel-btn" onclick="cancelEditUser('${userId}')">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button type="submit" class="save-btn">
-                            <i class="fas fa-save"></i> Save Changes
+                <div class="user-edit-panel">
+                    <div class="user-edit-header">
+                        <h3 class="user-edit-title">
+                            <i class="fas fa-user-edit"></i>
+                            Edit User: ${user.firstName} ${user.lastName}
+                        </h3>
+                        <button class="close-edit-btn" onclick="cancelEditUser('${userId}')" title="Close edit form">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
-                </form>
+                    <form class="inline-edit-form" id="edit-form-${userId}" onsubmit="event.preventDefault(); saveUserEdit('${userId}')">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-first-name-${userId}">First Name</label>
+                                <input type="text" id="edit-first-name-${userId}" value="${user.firstName || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-last-name-${userId}">Last Name</label>
+                                <input type="text" id="edit-last-name-${userId}" value="${user.lastName || ''}" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-email-${userId}">Email</label>
+                                <input type="email" id="edit-email-${userId}" value="${user.email || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-phone-${userId}">Phone</label>
+                                <input type="tel" id="edit-phone-${userId}" value="${user.phone || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-location-${userId}">Location</label>
+                                <input type="text" id="edit-location-${userId}" value="${user.location || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-admin-status-${userId}">Admin Status</label>
+                                <select id="edit-admin-status-${userId}" ${isCurrentAdmin ? 'disabled' : ''}>
+                                    <option value="false" ${!user.isAdmin ? 'selected' : ''}>Regular User</option>
+                                    <option value="true" ${user.isAdmin ? 'selected' : ''}>Admin</option>
+                                </select>
+                                ${isCurrentAdmin ? '<div class="admin-status-note">You cannot remove your own admin status</div>' : ''}
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="cancel-btn" onclick="cancelEditUser('${userId}')">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="save-btn">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </td>
         `;
         
         // Insert the edit row after the user row
         userRow.parentNode.insertBefore(editRow, userRow.nextSibling);
         
-        // Hide the user row while editing
-        userRow.style.display = 'none';
+        // Keep the user row visible, similar to ticket history
+        userRow.style.display = '';
 
     } catch (error) {
         console.error('Error setting up inline editing:', error);
@@ -1349,7 +1702,7 @@ function cancelEditUser(userId) {
             editRow.remove();
         }
         
-        // Show the original user row
+        // Ensure the user row is visible
         const userRow = document.querySelector(`tr[data-userid="${userId}"]`);
         if (userRow) {
             userRow.style.display = '';
@@ -1446,6 +1799,12 @@ function switchTab(tabId) {
     try {
         console.log(`Switching to tab: ${tabId}`);
         
+        // Only allow valid tabs
+        if (tabId !== 'users' && tabId !== 'tickets') {
+            console.error('Invalid tab ID:', tabId);
+            return;
+        }
+        
         // Update tab buttons
         const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(btn => {
@@ -1458,8 +1817,10 @@ function switchTab(tabId) {
         
         // Update tab content
         const tabContents = document.querySelectorAll('.tab-content');
+        let tabAlreadyActive = false;
         tabContents.forEach(content => {
             if (content.id === `${tabId}Tab`) {
+                tabAlreadyActive = content.classList.contains('active');
                 content.classList.add('active');
                 content.style.display = 'block';
             } else {
@@ -1468,11 +1829,14 @@ function switchTab(tabId) {
             }
         });
         
-        // Load content based on tab
-        if (tabId === 'users') {
-            loadUsers();
-        } else if (tabId === 'tickets') {
-            loadTickets();
+        // Only load content if the tab wasn't already active
+        if (!tabAlreadyActive) {
+            // Load content based on tab
+            if (tabId === 'users') {
+                loadUsers();
+            } else if (tabId === 'tickets') {
+                loadTickets();
+            }
         }
     } catch (error) {
         console.error('Error switching tabs:', error);
@@ -1792,8 +2156,28 @@ function openEditTicketModal(ticketId) {
                         sectionSelect.value = ticket.section;
                     }
                     
-                    // Calculate initial price
-                    calculateTicketPrice(ticketId);
+                    // Calculate initial price using our function to ensure consistency between card and edit form
+                    const priceCalc = calculateTicketPrice(ticketId);
+                    
+                    // Update the ticket record's price to match what we calculate
+                    if (priceCalc) {
+                        ticket.totalPrice = priceCalc.totalPrice;
+                        ticket.basePrice = priceCalc.basePrice;
+                        ticket.serviceFee = priceCalc.serviceFee;
+                        ticket.processingFee = priceCalc.processingFee;
+                        
+                        // Also update the original card's price display for when edit is canceled
+                        const originalHtml = ticketCard.getAttribute('data-original-html');
+                        if (originalHtml) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = originalHtml;
+                            const priceElement = tempDiv.querySelector('.price');
+                            if (priceElement) {
+                                priceElement.textContent = '$' + priceCalc.totalPrice.toFixed(2);
+                                ticketCard.setAttribute('data-original-html', tempDiv.innerHTML);
+                            }
+                        }
+                    }
                 }
             }, 100);
             
@@ -2161,4 +2545,216 @@ function saveTicketEdit(ticketId) {
         showNotification('Error saving changes', 'error');
     }
 } 
+
+// Filter tickets based on filters
+function filterTickets() {
+    try {
+        console.log('Filtering tickets');
+        const ownerFilter = document.getElementById('ticket-owner-filter')?.value || 'all';
+        const gameFilter = document.getElementById('ticket-game-filter')?.value || 'all';
+        const sectionTypeFilter = document.getElementById('ticket-section-filter')?.value || 'all';
+        const statusFilter = document.getElementById('ticket-status-filter')?.value?.toLowerCase() || 'all';
+        
+        console.log(`Filter values: owner=${ownerFilter}, game=${gameFilter}, sectionType=${sectionTypeFilter}, status=${statusFilter}`);
+        
+        // Get all ticket cards
+        const ticketCards = document.querySelectorAll('#tickets-grid .ticket-card');
+        console.log(`Found ${ticketCards.length} ticket cards to filter`);
+        
+        let visibleCount = 0;
+        
+        ticketCards.forEach((card, index) => {
+            try {
+                // Get ticket data using safe null checks
+                const gameElement = card.querySelector('.ticket-header h3');
+                const game = gameElement ? gameElement.textContent.toLowerCase() : '';
+                
+                // Find the section type - look for the info row that contains "Section Type:"
+                let sectionType = '';
+                const infoRows = card.querySelectorAll('.ticket-details .ticket-info-row');
+                for (const row of infoRows) {
+                    const label = row.querySelector('.info-label');
+                    if (label && label.textContent.includes('Section Type:')) {
+                        const valueElement = row.querySelector('.info-value');
+                        sectionType = valueElement ? valueElement.textContent.toLowerCase() : '';
+                        break;
+                    }
+                }
+                
+                const ownerElement = card.querySelector('.owner-name');
+                const ownerName = ownerElement ? ownerElement.textContent.toLowerCase() : '';
+                
+                const cardStatus = card.getAttribute('data-status')?.toLowerCase() || 'pending';
+                const userId = card.getAttribute('data-user-id') || '';
+                
+                // Debug the values extracted from this card
+                console.log(`Card ${index + 1}: game=${game}, sectionType=${sectionType}, owner=${ownerName}, status=${cardStatus}, userId=${userId}`);
+                
+                // Check if ticket matches all filters
+                const matchesOwner = ownerFilter === 'all' || userId === ownerFilter;
+                const matchesGame = gameFilter === 'all' || game.includes(gameFilter.toLowerCase());
+                const matchesSectionType = sectionTypeFilter === 'all' || sectionType === sectionTypeFilter.toLowerCase();
+                const matchesStatus = statusFilter === 'all' || cardStatus === statusFilter;
+                
+                // Debug the match results
+                console.log(`Card ${index + 1} matches: owner=${matchesOwner}, game=${matchesGame}, sectionType=${matchesSectionType}, status=${matchesStatus}`);
+                
+                // Show or hide ticket based on filters
+                if (matchesOwner && matchesGame && matchesSectionType && matchesStatus) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            } catch (cardError) {
+                console.error(`Error processing card ${index + 1}:`, cardError);
+                // Don't hide the card if there was an error
+                card.style.display = '';
+                visibleCount++;
+            }
+        });
+        
+        console.log(`Filter results: ${visibleCount} of ${ticketCards.length} tickets visible`);
+        
+        // Update ticket count display
+        const ticketCountElement = document.getElementById('ticket-count');
+        if (ticketCountElement) {
+            const totalTickets = ticketCards.length;
+            ticketCountElement.innerHTML = `
+                <i class="fas fa-ticket-alt"></i>
+                <span>${visibleCount}</span> of ${totalTickets} Tickets
+            `;
+        }
+        
+        // Show/hide no tickets message
+        const noTicketsElement = document.getElementById('no-tickets');
+        if (noTicketsElement) {
+            if (visibleCount === 0) {
+                noTicketsElement.style.display = 'block';
+                noTicketsElement.innerHTML = `
+                    <i class="fas fa-ticket-alt"></i>
+                    No tickets found matching your criteria.
+                `;
+            } else {
+                noTicketsElement.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error filtering tickets:', error);
+        showNotification('Error filtering tickets: ' + error.message, 'error');
+    }
+}
+
+// Populate filter dropdowns with data from tickets
+function populateTicketFilters(tickets) {
+    try {
+        console.log('Populating ticket filters');
+        
+        // Get unique users and games from tickets
+        const users = new Map(); // Use Map to track both ID and name
+        const games = new Set();
+        
+        // First fetch all users to get their names
+        fetch('/api/admin/users', {
+            credentials: 'include'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch users for filter options');
+            }
+            return response.json();
+        })
+        .then(userData => {
+            // Create a map of user IDs to user names
+            const userMap = {};
+            userData.forEach(user => {
+                const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+                userMap[user._id] = fullName;
+            });
+            
+            // Process tickets to extract unique values
+            tickets.forEach(ticket => {
+                // Add user if we have the name
+                if (ticket.userId && userMap[ticket.userId]) {
+                    users.set(ticket.userId, userMap[ticket.userId]);
+                }
+                
+                // Add game
+                if (ticket.game) {
+                    games.add(ticket.game);
+                }
+            });
+            
+            // Populate the owner filter dropdown
+            const ownerFilterEl = document.getElementById('ticket-owner-filter');
+            if (ownerFilterEl) {
+                // Clear existing options except for the "All" option
+                while (ownerFilterEl.options.length > 1) {
+                    ownerFilterEl.remove(1);
+                }
+                
+                // Add sorted user options
+                Array.from(users.entries())
+                    .sort((a, b) => a[1].localeCompare(b[1])) // Sort by name
+                    .forEach(([userId, userName]) => {
+                        const option = document.createElement('option');
+                        option.value = userId;
+                        option.textContent = userName;
+                        ownerFilterEl.appendChild(option);
+                    });
+            }
+            
+            // Populate the game filter dropdown
+            const gameFilterEl = document.getElementById('ticket-game-filter');
+            if (gameFilterEl) {
+                // Clear existing options except for the "All" option
+                while (gameFilterEl.options.length > 1) {
+                    gameFilterEl.remove(1);
+                }
+                
+                // Add sorted game options
+                Array.from(games)
+                    .sort() // Sort alphabetically
+                    .forEach(game => {
+                        const option = document.createElement('option');
+                        option.value = game;
+                        option.textContent = game;
+                        gameFilterEl.appendChild(option);
+                    });
+            }
+        })
+        .catch(error => {
+            console.error('Error populating filter dropdowns:', error);
+            showNotification('Error loading filter options', 'error');
+        });
+    } catch (error) {
+        console.error('Error in populateTicketFilters:', error);
+    }
+}
+
+// Function to reset all ticket filters
+function resetTicketFilters() {
+    try {
+        console.log('Resetting all ticket filters');
+        
+        // Reset all filter dropdowns to 'all'
+        const ownerFilter = document.getElementById('ticket-owner-filter');
+        const gameFilter = document.getElementById('ticket-game-filter');
+        const sectionFilter = document.getElementById('ticket-section-filter');
+        const statusFilter = document.getElementById('ticket-status-filter');
+        
+        if (ownerFilter) ownerFilter.value = 'all';
+        if (gameFilter) gameFilter.value = 'all';
+        if (sectionFilter) sectionFilter.value = 'all';
+        if (statusFilter) statusFilter.value = 'all';
+        
+        // Apply the reset filters
+        filterTickets();
+        
+        showNotification('Filters have been reset', 'success');
+    } catch (error) {
+        console.error('Error resetting filters:', error);
+        showNotification('Error resetting filters', 'error');
+    }
+}
 
