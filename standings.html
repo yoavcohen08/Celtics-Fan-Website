@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Standings 2024-2025 | Boston Celtics</title>
+    <link rel="icon" href="images/backgrounds/celticsweb.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Standings Specific Styles */
+        .standings-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .standings-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .standings-header h1 {
+            font-size: 2.5rem;
+            color: var(--celtics-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .standings-header p {
+            color: #ccc;
+            font-size: 1rem;
+        }
+
+        .standings-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            border-bottom: none;
+            margin-bottom: 2rem;
+            overflow-x: hidden;
+            background: #00471b;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 0 4px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .primary-tabs, .secondary-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            margin: 0 6px;
+        }
+
+        .standings-tab {
+            padding: 12px 12px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            font-size: 0.78rem;
+            position: relative;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+
+        .standings-tab:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .standings-tab.active {
+            color: white;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .standings-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 40%;
+            height: 3px;
+            background-color: var(--celtics-gold);
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .standings-tab:not(.active)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(-50%);
+            transition: width 0.3s ease;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .standings-tab:hover::after {
+            width: 40%;
+        }
+
+        .standings-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .standings-content.active {
+            display: block;
+        }
+
+        .standings-content h2 {
+            margin-bottom: 1rem;
+            color: #eee;
+            font-size: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+        }
+
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.15rem;
+        }
+
+        .standings-table th,
+        .standings-table td {
+            padding: 3px 3px;
+            text-align: center;
+        }
+        
+        .standings-table th {
+            text-align: center !important;
+        }
+        
+        .standings-table th:first-child,
+        .standings-table td:first-child,
+        .standings-table th:nth-child(2),
+        .standings-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        .standings-table .stat-number {
+            width: 35px;
+            padding: 3px 10px;
+        }
+
+        .standings-table .team-logo {
+            width: 24px;
+            height: 24px;
+            margin-right: 6px;
+        }
+
+        .standings-table .team-cell {
+            min-width: 60px;
+            padding-right: 0;
+            margin-right: 0;
+        }
+        
+        .standings-table thead {
+            background: linear-gradient(to bottom, #2a2a2a, #222);
+        }
+        
+        .standings-table thead th {
+            font-size: 1rem;
+            padding: 8px 5px;
+            letter-spacing: 0;
+        }
+        
+        .standings-table tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .standings-table th {
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #333;
+            white-space: nowrap;
+            transition: background-color 0.2s;
+        }
+
+        .standings-table th.sortable {
+            cursor: pointer;
+        }
+
+        .standings-table th.sortable:hover {
+            background-color: #333;
+        }
+
+        .standings-table th.sorted::after {
+            content: '↓';
+            margin-left: 5px;
+            font-size: 0.8em;
+        }
+
+        .standings-table th.sorted.asc::after {
+            content: '↑';
+        }
+
+        .standings-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid #333;
+            color: #ddd;
+            white-space: nowrap;
+            font-size: 1.15rem !important;
+            font-weight: normal !important;
+        }
+
+        .standings-table td:not(:nth-child(2)) {
+            font-size: 1.15rem !important;
+            letter-spacing: 0;
+        }
+
+        .standings-table .team-record {
+            font-size: 0.55rem !important;
+        }
+
+        .standings-table tbody * {
+            font-size: 1.15rem !important;
+        }
+
+        .standings-table .streak-text {
+            font-size: 1.15rem !important;
+            font-weight: bold;
+        }
+
+        .standings-table tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        .standings-table tbody tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        .standings-table .rank {
+            width: 40px;
+            text-align: center !important;
+            font-weight: 600;
+            padding-right: 15px;
+        }
+
+        .standings-table .team-name {
+            font-size: 1.15rem !important;
+            letter-spacing: -0.1px;
+        }
+
+        .standings-table .team-conference {
+            font-size: 0.8rem;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        .standings-table .positive {
+            color: var(--celtics-green);
+        }
+
+        .standings-table .negative {
+            color: #ff4d4d;
+        }
+
+        .standings-table .neutral {
+            color: #aaa;
+        }
+
+        .last-10 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .last-10 .result {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .last-10 .win {
+            background-color: var(--celtics-green);
+        }
+
+        .last-10 .loss {
+            background-color: #ff4d4d;
+        }
+
+        .team-badge {
+            font-size: 0.7rem !important;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            min-width: 65px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            opacity: 0.85;
+            box-shadow: none;
+        }
+        
+        .team-badge.playoff {
+            background: linear-gradient(to right, #006633, #007a3d);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .team-badge.play-in {
+            background: linear-gradient(to right, #c46f00, #d68100);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .team-badge.tanking {
+            background: linear-gradient(to right, #5c177d, #671b8a);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .team-badge.playoff::before,
+        .team-badge.play-in::before,
+        .team-badge.tanking::before {
+            content: "";
+        }
+        
+        .standings-table .status-column {
+            width: 80px;
+        }
+
+        /* Loading and error states */
+        .status-container {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 128, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--celtics-green);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #ff4d4d;
+            background-color: rgba(255, 77, 77, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .error-message h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .retry-button {
+            background-color: var(--celtics-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .retry-button:hover {
+            background-color: #005c29;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .standings-header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .standings-tab {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .standings-table th,
+            .standings-table td {
+                padding: 10px 8px;
+                font-size: 0.85rem;
+            }
+            
+            .standings-table .team-logo {
+                width: 24px;
+                height: 24px;
+                margin-right: 8px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .standings-table .team-cell {
+                min-width: 140px;
+            }
+            .standings-table .stat-number {
+                width: 36px;
+            }
+        }
+
+        /* Make GB bold */
+        .standings-table .gb-value {
+            font-weight: bold !important;
+        }
+
+        /* Ensure all table headers have proper text alignment */
+        .standings-table th:first-child {
+            text-align: center !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="MYweb.html">
+                    <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
+                </a>
+                <div class="nav-links">
+                    <a href="MYweb.html#news" class="nav-link">News</a>
+                    <a href="schedule.html" class="nav-link">Schedule</a>
+                    <a href="roster.html" class="nav-link">Roster</a>
+                    <a href="standings.html" class="nav-link active">Standings</a>
+                    <a href="getTickets.html" class="nav-link">Get Tickets</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <a href="login.html" class="btn btn-outline">Login</a>
+                <a href="register.html" class="btn btn-outline">Sign Up</a>
+                <a href="MYweb.html#footer-contact" class="btn btn-outline">Contact</a>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="content main-content">
+        <div class="standings-container">
+            <div class="standings-header">
+                <h1>NBA Standings 2024-2025</h1>
+                <p>Live standings for the 2024-2025 NBA season</p>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="standings-tabs">
+                <button class="standings-tab active" data-tab="league">League</button>
+                <button class="standings-tab" data-tab="east">Eastern</button>
+                <button class="standings-tab" data-tab="west">Western</button>
+                <button class="standings-tab" data-tab="tanking">Tanking</button>
+                <button class="standings-tab" data-tab="atlantic">Atlantic</button>
+                <button class="standings-tab" data-tab="central">Central</button>
+                <button class="standings-tab" data-tab="southeast">Southeast</button>
+                <button class="standings-tab" data-tab="northwest">Northwest</button>
+                <button class="standings-tab" data-tab="pacific">Pacific</button>
+                <button class="standings-tab" data-tab="southwest">Southwest</button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-container" class="status-container">
+                <div class="loading-spinner"></div>
+                <p>Loading the latest NBA standings...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-container" class="error-message" style="display:none;">
+                <h3>Oops! Something went wrong</h3>
+                <p>We couldn't load the latest standings. Please try again later.</p>
+                <button id="retry-button" class="retry-button">Try Again</button>
+            </div>
+
+            <!-- Standings Content -->
+            <div id="standings-content" style="display:none;">
+                <!-- League Standings -->
+                <div id="league-content" class="standings-content active">
+                    <h2>League Standings</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="league-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="league-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Eastern Conference -->
+                <div id="east-content" class="standings-content">
+                    <h2>Eastern Conference</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="east-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="east-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Western Conference -->
+                <div id="west-content" class="standings-content">
+                    <h2>Western Conference</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="west-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="west-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tanking Rankings -->
+                <div id="tanking-content" class="standings-content">
+                    <h2>Tanking Watch <span class="team-badge tanking">Draft Lottery Race</span></h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="tanking-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable sorted" data-sort="losses">L</th>
+                                    <th class="stat-number sortable" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tanking-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Atlantic Division -->
+                <div id="atlantic-content" class="standings-content">
+                    <h2>Atlantic Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="atlantic-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="atlantic-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Central Division -->
+                <div id="central-content" class="standings-content">
+                    <h2>Central Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="central-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="central-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Southeast Division -->
+                <div id="southeast-content" class="standings-content">
+                    <h2>Southeast Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="southeast-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="southeast-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Northwest Division -->
+                <div id="northwest-content" class="standings-content">
+                    <h2>Northwest Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="northwest-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="northwest-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pacific Division -->
+                <div id="pacific-content" class="standings-content">
+                    <h2>Pacific Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="pacific-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pacific-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Southwest Division -->
+                <div id="southwest-content" class="standings-content">
+                    <h2>Southwest Division</h2>
+                    <div class="table-container">
+                        <table class="standings-table" id="southwest-table">
+                            <thead>
+                                <tr>
+                                    <th class="rank">#</th>
+                                    <th>Team</th>
+                                    <th class="status-column">Status</th>
+                                    <th class="stat-number sortable" data-sort="games_played">GP</th>
+                                    <th class="stat-number sortable" data-sort="wins">W</th>
+                                    <th class="stat-number sortable" data-sort="losses">L</th>
+                                    <th class="stat-number sortable sorted" data-sort="win_pct">Win %</th>
+                                    <th class="stat-number sortable" data-sort="home">Home</th>
+                                    <th class="stat-number sortable" data-sort="away">Away</th>
+                                    <th class="stat-number sortable" data-sort="last10">L10</th>
+                                    <th class="stat-number sortable" data-sort="streak">Streak</th>
+                                    <th class="stat-number sortable" data-sort="gb">GB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="southwest-table-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
+                <p class="footer-description">The most successful team in NBA history, with 18 championships and counting.</p>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/bostonceltics/" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="https://www.instagram.com/celtics/?hl=en" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://x.com/celtics" target="_blank" rel="noopener noreferrer">
+                        <i class="fa-solid fa-x"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="MYweb.html">Home</a></li>
+                    <li><a href="MYweb.html#news">News</a></li>
+                    <li><a href="schedule.html">Schedule</a></li>
+                    <li><a href="roster.html">Roster</a></li>
+                    <li><a href="standings.html">Standings</a></li>
+                    <li><a href="getTickets.html">Tickets</a></li>
+                </ul>
+            </div>
+            <div class="footer-section" id="footer-contact">
+                <h4>Contact Us</h4>
+                <ul class="contact-info">
+                    <li>
+                        <i class="fas fa-user"></i>
+                        <span>Yoav Cohen</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-envelope"></i>
+                        <span>yoav23cohen@gmail.com</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-phone"></i>
+                        <span>+972 52-466-9882</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Herut, Israel</span>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/yoav-cohen-42b4272a5/" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin"></i>
+                            <span>LinkedIn Profile</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Newsletter</h4>
+                <p>Subscribe to get the latest Celtics news and updates.</p>
+                <div class="newsletter-form">
+                    <input type="email" placeholder="Enter your email" aria-label="Email for newsletter">
+                    <button type="submit" aria-label="Subscribe to newsletter">Subscribe</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Boston Celtics. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+    <script src="navbar.js"></script>
+    <script src="standings.js"></script>
+</body>
+</html> 

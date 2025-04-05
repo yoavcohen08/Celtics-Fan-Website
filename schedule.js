@@ -1,380 +1,403 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize global variables
+    // DOM Elements
+    console.log('[Schedule] DOM loaded, initializing schedule page');
     const scheduleContent = document.getElementById('schedule-content');
     const loadingIndicator = document.getElementById('loading-indicator');
     const errorMessage = document.getElementById('error-message');
     const retryButton = document.getElementById('retry-button');
     const filterButtons = document.querySelectorAll('.filter-buttons button');
     
-    // Team ID for Boston Celtics
-    const CELTICS_TEAM_ID = '1610612738';
+    console.log('[Schedule] Found filter buttons:', filterButtons.length);
     
-    // Current season (modify this each year)
-    const CURRENT_SEASON = '2024-25';
-    
-    // Function to format date to readable format
+    // Constants
+    const CELTICS_TEAM_ID = '2'; // API-NBA (RapidAPI) uses 2 for Boston Celtics
+    const CURRENT_SEASON = '2024'; // API expects year like 2024 for 2024-25 season
+
+    // --- Data Processing Functions (Adapted for RapidAPI /games structure) ---
+
     function formatDate(dateString) {
-        const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        const date = new Date(dateString);
-        return {
-            day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        };
-    }
-    
-    // Function to get month name from date
-    function getMonthName(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'long' }).toLowerCase();
-    }
-    
-    // Function to determine game status
-    function getGameStatus(game) {
-        if (game.statusNum === 3) {
-            // Game completed
+        try {
+            const date = new Date(dateString); // e.g., "2024-10-24T00:00:00.000Z"
+            if (isNaN(date)) throw new Error('Invalid date');
             return {
-                isCompleted: true,
-                result: `Final: ${game.hTeam.triCode} ${game.hTeam.score} - ${game.vTeam.triCode} ${game.vTeam.score}`,
-                isCelticsWin: (game.hTeam.teamId === CELTICS_TEAM_ID && parseInt(game.hTeam.score) > parseInt(game.vTeam.score)) || 
-                             (game.vTeam.teamId === CELTICS_TEAM_ID && parseInt(game.vTeam.score) > parseInt(game.hTeam.score))
+                day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             };
-        } else if (game.statusNum === 2) {
-            // Game in progress
-            return {
-                isCompleted: false,
-                result: `In Progress: ${game.hTeam.triCode} ${game.hTeam.score} - ${game.vTeam.triCode} ${game.vTeam.score}`,
-                isCelticsWin: false
-            };
-        } else {
-            // Game not started
-            const gameTime = new Date(game.startTimeUTC);
-            const formattedTime = gameTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            return {
-                isCompleted: false,
-                result: `${formattedTime}`,
-                isCelticsWin: false
-            };
+        } catch (e) {
+            console.error("[Schedule] Error formatting date:", dateString, e);
+            return { day: 'N/A', date: 'N/A' };
         }
     }
     
-    // Function to get team logo URL
+    function getMonthName(dateString) {
+         try {
+            const date = new Date(dateString);
+            if (isNaN(date)) throw new Error('Invalid date');
+            return date.toLocaleDateString('en-US', { month: 'long' }).toLowerCase();
+        } catch (e) {
+            console.error("[Schedule] Error getting month name:", dateString, e);
+            return 'unknown';
+        }
+    }
+    
+    function getGameStatus(game) {
+        const statusLong = game.status.long;
+        const scores = game.scores;
+        const homeTeamId = game.teams.home.id.toString(); // Ensure string comparison
+        const visitorsTeamId = game.teams.visitors.id.toString();
+
+        if (statusLong === 'Finished') {
+            const homeScore = scores.home.points ?? 0;
+            const visitorsScore = scores.visitors.points ?? 0;
+            const isCelticsWin = (homeTeamId === CELTICS_TEAM_ID && homeScore > visitorsScore) || 
+                                 (visitorsTeamId === CELTICS_TEAM_ID && visitorsScore > homeScore);
+            return {
+                isCompleted: true,
+                text: `Final: ${scores.home.points}-${scores.visitors.points}`,
+                isCelticsWin: isCelticsWin
+            };
+        } else if (statusLong === 'In Play') {
+             // API might not provide live scores reliably here, adjust if needed
+            return {
+                isCompleted: false,
+                text: `Live`,
+                isCelticsWin: false
+            };
+        } else { // Scheduled, Postponed, Cancelled etc.
+            try {
+                const gameTime = new Date(game.date.start);
+                if (isNaN(gameTime)) throw new Error('Invalid date');
+                const formattedTime = gameTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+                return {
+                    isCompleted: false,
+                    text: formattedTime,
+                    isCelticsWin: false
+                };
+            } catch (e) {
+                 console.error("[Schedule] Error formatting game time:", game.date.start, e);
+                 return {
+                    isCompleted: false,
+                    text: statusLong, // Fallback to status if time formatting fails
+                    isCelticsWin: false
+                };
+            }
+        }
+    }
+    
+    // Uses RapidAPI Team IDs
     function getTeamLogoUrl(teamId) {
-        // Map NBA team IDs to your local team logo paths
+        const idStr = teamId.toString(); // Ensure string comparison
         const teamLogos = {
-            '1610612738': 'images/teams/celtics.png',    // Boston Celtics
-            '1610612751': 'images/teams/nets.png',       // Brooklyn Nets
-            '1610612752': 'images/teams/knicks.png',     // New York Knicks
-            '1610612755': 'images/teams/sixers.png',     // Philadelphia 76ers
-            '1610612761': 'images/teams/raptors.png',    // Toronto Raptors
-            '1610612741': 'images/teams/bulls.png',      // Chicago Bulls
-            '1610612739': 'images/teams/cavaliers.png',  // Cleveland Cavaliers
-            '1610612765': 'images/teams/pistons.png',    // Detroit Pistons
-            '1610612754': 'images/teams/pacers.png',     // Indiana Pacers
-            '1610612749': 'images/teams/bucks.png',      // Milwaukee Bucks
-            '1610612737': 'images/teams/hawks.png',      // Atlanta Hawks
-            '1610612766': 'images/teams/hornets.png',    // Charlotte Hornets
-            '1610612748': 'images/teams/heat.png',       // Miami Heat
-            '1610612753': 'images/teams/magic.png',      // Orlando Magic
-            '1610612764': 'images/teams/wizards.png',    // Washington Wizards
-            '1610612743': 'images/teams/nuggets.png',    // Denver Nuggets
-            '1610612750': 'images/teams/timberwolves.png', // Minnesota Timberwolves
-            '1610612760': 'images/teams/thunder.png',    // Oklahoma City Thunder
-            '1610612757': 'images/teams/blazers.png',    // Portland Trail Blazers
-            '1610612762': 'images/teams/jazz.png',       // Utah Jazz
-            '1610612744': 'images/teams/warriors.png',   // Golden State Warriors
-            '1610612746': 'images/teams/clippers.png',   // LA Clippers
-            '1610612747': 'images/teams/lakers.png',     // Los Angeles Lakers
-            '1610612756': 'images/teams/suns.png',       // Phoenix Suns
-            '1610612758': 'images/teams/kings.png',      // Sacramento Kings
-            '1610612742': 'images/teams/mavericks.png',  // Dallas Mavericks
-            '1610612745': 'images/teams/rockets.png',    // Houston Rockets
-            '1610612763': 'images/teams/grizzlies.png',  // Memphis Grizzlies
-            '1610612740': 'images/teams/pelicans.png',   // New Orleans Pelicans
-            '1610612759': 'images/teams/spurs.png'       // San Antonio Spurs
+            '1': 'images/teams/hawks.png',      // Atlanta Hawks
+            '2': 'images/teams/celtics.png',    // Boston Celtics
+            '4': 'images/teams/nets.png',       // Brooklyn Nets
+            '5': 'images/teams/hornets.png',    // Charlotte Hornets
+            '6': 'images/teams/bulls.png',      // Chicago Bulls
+            '7': 'images/teams/cavaliers.png',  // Cleveland Cavaliers
+            '8': 'images/teams/mavericks.png',  // Dallas Mavericks
+            '9': 'images/teams/nuggets.png',    // Denver Nuggets
+            '10': 'images/teams/pistons.png',   // Detroit Pistons
+            '11': 'images/teams/warriors.png',  // Golden State Warriors
+            '14': 'images/teams/rockets.png',   // Houston Rockets
+            '15': 'images/teams/pacers.png',    // Indiana Pacers
+            '16': 'images/teams/clippers.png',  // LA Clippers
+            '17': 'images/teams/lakers.png',    // Los Angeles Lakers
+            '19': 'images/teams/grizzlies.png', // Memphis Grizzlies
+            '20': 'images/teams/heat.png',      // Miami Heat
+            '21': 'images/teams/bucks.png',     // Milwaukee Bucks
+            '22': 'images/teams/timberwolves.png', // Minnesota Timberwolves
+            '23': 'images/teams/pelicans.png',  // New Orleans Pelicans
+            '24': 'images/teams/knicks.png',    // New York Knicks
+            '25': 'images/teams/thunder.png',   // Oklahoma City Thunder
+            '26': 'images/teams/magic.png',     // Orlando Magic
+            '27': 'images/teams/76ers.png',    // Philadelphia 76ers
+            '28': 'images/teams/suns.png',      // Phoenix Suns
+            '29': 'images/teams/blazers.png',   // Portland Trail Blazers
+            '30': 'images/teams/kings.png',     // Sacramento Kings
+            '31': 'images/teams/spurs.png',     // San Antonio Spurs
+            '38': 'images/teams/raptors.png',   // Toronto Raptors
+            '40': 'images/teams/jazz.png',      // Utah Jazz
+            '41': 'images/teams/wizards.png'    // Washington Wizards
         };
-        
-        return teamLogos[teamId] || 'images/teams/default.png';
+        return teamLogos[idStr] || 'images/teams/default.png'; 
     }
     
-    // Function to get team abbreviation from team ID
-    function getTeamAbbreviation(teamId) {
-        // Map NBA team IDs to their abbreviations
-        const teamAbbreviations = {
-            '1610612738': 'Celtics',    // Boston Celtics
-            '1610612751': 'Nets',       // Brooklyn Nets
-            '1610612752': 'Knicks',     // New York Knicks
-            '1610612755': 'Sixers',     // Philadelphia 76ers
-            '1610612761': 'Raptors',    // Toronto Raptors
-            '1610612741': 'Bulls',      // Chicago Bulls
-            '1610612739': 'Cavaliers',  // Cleveland Cavaliers
-            '1610612765': 'Pistons',    // Detroit Pistons
-            '1610612754': 'Pacers',     // Indiana Pacers
-            '1610612749': 'Bucks',      // Milwaukee Bucks
-            '1610612737': 'Hawks',      // Atlanta Hawks
-            '1610612766': 'Hornets',    // Charlotte Hornets
-            '1610612748': 'Heat',       // Miami Heat
-            '1610612753': 'Magic',      // Orlando Magic
-            '1610612764': 'Wizards',    // Washington Wizards
-            '1610612743': 'Nuggets',    // Denver Nuggets
-            '1610612750': 'Wolves',     // Minnesota Timberwolves
-            '1610612760': 'Thunder',    // Oklahoma City Thunder
-            '1610612757': 'Blazers',    // Portland Trail Blazers
-            '1610612762': 'Jazz',       // Utah Jazz
-            '1610612744': 'Warriors',   // Golden State Warriors
-            '1610612746': 'Clippers',   // LA Clippers
-            '1610612747': 'Lakers',     // Los Angeles Lakers
-            '1610612756': 'Suns',       // Phoenix Suns
-            '1610612758': 'Kings',      // Sacramento Kings
-            '1610612742': 'Mavericks',  // Dallas Mavericks
-            '1610612745': 'Rockets',    // Houston Rockets
-            '1610612763': 'Grizzlies',  // Memphis Grizzlies
-            '1610612740': 'Pelicans',   // New Orleans Pelicans
-            '1610612759': 'Spurs'       // San Antonio Spurs
-        };
-        
-        return teamAbbreviations[teamId] || 'Team';
-    }
-    
-    // Function to create game card HTML
     function createGameCard(game) {
-        const formattedDate = formatDate(game.startDateEastern);
-        const isCelticsHome = game.hTeam.teamId === CELTICS_TEAM_ID;
-        const homeTeam = isCelticsHome ? game.hTeam : game.vTeam;
-        const awayTeam = isCelticsHome ? game.vTeam : game.hTeam;
-        const gameStatus = getGameStatus(game);
-        const venue = game.arena.name || 'TBD';
-        
-        const homeTeamLogo = getTeamLogoUrl(homeTeam.teamId);
-        const awayTeamLogo = getTeamLogoUrl(awayTeam.teamId);
-        const homeTeamName = getTeamAbbreviation(homeTeam.teamId);
-        const awayTeamName = getTeamAbbreviation(awayTeam.teamId);
-        
-        // Determine card classes
-        let cardClasses = 'game-card';
-        cardClasses += isCelticsHome ? ' home' : ' away';
-        cardClasses += gameStatus.isCompleted ? (gameStatus.isCelticsWin ? ' win' : ' loss') : '';
-        cardClasses += gameStatus.isCompleted ? ' completed' : '';
-        
-        return `
-            <div class="${cardClasses}" data-date="${game.startDateEastern}" data-month="${getMonthName(game.startDateEastern)}">
-                <div class="game-date">
-                    <span class="day">${formattedDate.day}</span>
-                    <span class="date">${formattedDate.date}</span>
-                </div>
-                <div class="game-teams">
-                    <div class="team away">
-                        <img src="${awayTeamLogo}" alt="${awayTeamName}" class="team-logo">
-                        <span>${awayTeamName}</span>
-                    </div>
-                    <span class="vs">@</span>
-                    <div class="team home">
-                        <img src="${homeTeamLogo}" alt="${homeTeamName}" class="team-logo">
-                        <span>${homeTeamName}</span>
-                    </div>
-                </div>
-                <div class="game-info">
-                    <div class="game-venue"><i class="fas fa-map-marker-alt"></i> ${venue}</div>
-                    <div class="game-${gameStatus.isCompleted ? 'result' : 'time'} ${gameStatus.isCelticsWin ? 'win' : (gameStatus.isCompleted ? 'loss' : '')}">
-                        ${gameStatus.result}
-                    </div>
-                </div>
+        try {
+            const gameDate = game.date.start;
+            const formattedDate = formatDate(gameDate);
+            const monthName = getMonthName(gameDate);
+            
+            const homeTeam = game.teams.home;
+            const visitorsTeam = game.teams.visitors;
+            const isCelticsHome = homeTeam.id.toString() === CELTICS_TEAM_ID;
+            
+            const opponentData = isCelticsHome ? visitorsTeam : homeTeam;
+            
+            const gameStatus = getGameStatus(game);
+            const venue = game.arena.name || 'TBD';
+            
+            const opponentLogo = getTeamLogoUrl(opponentData.id);
+            const celticsLogo = getTeamLogoUrl(CELTICS_TEAM_ID);
+            
+            let cardClasses = 'game-card';
+            cardClasses += isCelticsHome ? ' home' : ' away';
+            if (gameStatus.isCompleted) {
+                 cardClasses += ' completed';
+                 cardClasses += gameStatus.isCelticsWin ? ' win' : ' loss';
+            }
+            
+            const gameActionsHTML = !gameStatus.isCompleted ? `
                 <div class="game-actions">
-                    <a href="getTickets.html" class="btn-ticket">Get Tickets</a>
+                    <a href="getTickets.html?gameId=${game.id}" class="btn-ticket">Get Tickets</a>
+                </div>` : ''; 
+
+            // Determine HTML for left and right teams based on home/away
+            let teamLeftHTML, teamRightHTML, separator;
+            if (isCelticsHome) {
+                teamLeftHTML = `
+                    <div class="team opponent">
+                        <img src="${opponentLogo}" alt="${opponentData.name}" class="team-logo">
+                        <span>${opponentData.name}</span>
+                    </div>
+                `;
+                separator = 'vs';
+                teamRightHTML = `
+                    <div class="team celtics">
+                        <img src="${celticsLogo}" alt="Boston Celtics" class="team-logo">
+                        <span>Celtics</span>
+                    </div>
+                `;
+            } else { // Celtics are away
+                teamLeftHTML = `
+                    <div class="team celtics">
+                        <img src="${celticsLogo}" alt="Boston Celtics" class="team-logo">
+                        <span>Celtics</span>
+                    </div>
+                `;
+                separator = '@';
+                teamRightHTML = `
+                    <div class="team opponent">
+                        <img src="${opponentLogo}" alt="${opponentData.name}" class="team-logo">
+                        <span>${opponentData.name}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="${cardClasses}" data-date="${gameDate}" data-month="${monthName}">
+                    <div class="game-date">
+                        <span class="day">${formattedDate.day}</span>
+                        <span class="date">${formattedDate.date}</span>
+                    </div>
+                    <div class="game-teams">
+                        ${teamLeftHTML}
+                        <span class="game-separator">${separator}</span>
+                        ${teamRightHTML}
+                    </div>
+                    <div class="game-info">
+                        <div class="game-venue"><i class="fas fa-map-marker-alt"></i> ${venue}</div>
+                        <div class="game-${gameStatus.isCompleted ? 'result' : 'time'} ${gameStatus.isCelticsWin ? 'win' : (gameStatus.isCompleted ? 'loss' : '')}">
+                            ${gameStatus.text}
+                        </div>
+                    </div>
+                    ${gameActionsHTML}
                 </div>
-            </div>
-        `;
+            `;
+        } catch (e) {
+             console.error("[Schedule] Error creating card for game:", game, e);
+             return '<div class="game-card error">Error displaying game</div>';
+        }
     }
     
-    // Function to group games by month
     function groupGamesByMonth(games) {
         const months = {};
-        
         games.forEach(game => {
-            const monthName = getMonthName(game.startDateEastern);
-            if (!months[monthName]) {
-                months[monthName] = [];
+             try {
+                const monthName = getMonthName(game.date.start);
+                if (!months[monthName]) months[monthName] = [];
+                months[monthName].push(game);
+            } catch (e) {
+                 console.error("[Schedule] Error grouping game by month:", game, e);
             }
-            months[monthName].push(game);
         });
-        
         return months;
     }
     
-    // Function to render the schedule
     function renderSchedule(games) {
-        // Group games by month
-        const gamesByMonth = groupGamesByMonth(games);
-        
-        // Clear the schedule content
-        scheduleContent.innerHTML = '';
-        
-        // Create a container for each month and add games
-        Object.keys(gamesByMonth).forEach(month => {
-            const monthContainer = document.createElement('div');
-            monthContainer.className = 'month-container';
-            monthContainer.id = month;
+        console.log('[Schedule] Rendering schedule with', games.length, 'games from API');
+        try {
+            games.sort((a, b) => new Date(a.date.start) - new Date(b.date.start));
+            const gamesByMonth = groupGamesByMonth(games);
+            scheduleContent.innerHTML = '';
             
-            // Create month heading
-            const monthHeading = document.createElement('h2');
-            monthHeading.className = 'month-heading';
-            monthHeading.textContent = month.charAt(0).toUpperCase() + month.slice(1);
-            monthContainer.appendChild(monthHeading);
+            if (Object.keys(gamesByMonth).length === 0) {
+                 scheduleContent.innerHTML = '<p class="no-games-message">No games found for the current season.</p>';
+                 return;
+            }
             
-            // Create game grid
-            const gameGrid = document.createElement('div');
-            gameGrid.className = 'game-grid';
-            
-            // Add each game to the grid
-            gamesByMonth[month].forEach(game => {
-                const gameCardHTML = createGameCard(game);
-                gameGrid.innerHTML += gameCardHTML;
+             // Define correct month order
+             const monthOrder = ['october', 'november', 'december', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september'];
+
+            Object.keys(gamesByMonth).sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(month => {
+                const monthContainer = document.createElement('div');
+                monthContainer.className = 'month-container';
+                monthContainer.id = month;
+                
+                const monthHeading = document.createElement('h2');
+                monthHeading.className = 'month-heading';
+                // Get year from the first game of the month
+                const year = gamesByMonth[month][0] ? new Date(gamesByMonth[month][0].date.start).getFullYear() : CURRENT_SEASON;
+                monthHeading.textContent = `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+                monthContainer.appendChild(monthHeading);
+                
+                const gameGrid = document.createElement('div');
+                gameGrid.className = 'game-grid';
+                
+                gamesByMonth[month].forEach(game => {
+                    gameGrid.innerHTML += createGameCard(game);
+                });
+                
+                monthContainer.appendChild(gameGrid);
+                scheduleContent.appendChild(monthContainer);
             });
             
-            monthContainer.appendChild(gameGrid);
-            scheduleContent.appendChild(monthContainer);
-        });
-        
-        // Re-initialize filter functionality
-        initializeFilters();
+            initializeFilters(); 
+        } catch (renderError) {
+            console.error('[Schedule] Error during schedule rendering:', renderError);
+            displayError('Error displaying schedule.');
+        }
     }
     
-    // Function to initialize filter functionality
     function initializeFilters() {
-        const monthContainers = document.querySelectorAll('.month-container');
-        
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                const filter = this.getAttribute('data-month');
-                
-                if (filter === 'all') {
-                    // Show all months
-                    monthContainers.forEach(container => {
-                        container.style.display = 'block';
-                    });
-                } else {
-                    // Hide all months
-                    monthContainers.forEach(container => {
-                        container.style.display = 'none';
-                    });
-                    // Show selected month
-                    document.getElementById(filter)?.style.display = 'block';
-                }
-            });
-        });
+        // ... (Filter logic can remain similar if needed, ensure it interacts with rendered DOM) ...
+         filterButtons.forEach(button => {
+             button.addEventListener('click', function() {
+                 filterButtons.forEach(btn => btn.classList.remove('active'));
+                 this.classList.add('active');
+                 const filterValue = this.getAttribute('data-filter'); // e.g., 'all', 'october', 'november'
+
+                 const allMonthContainers = scheduleContent.querySelectorAll('.month-container');
+                 allMonthContainers.forEach(container => {
+                     if (filterValue === 'all' || container.id === filterValue) {
+                         container.style.display = 'block';
+                     } else {
+                         container.style.display = 'none';
+                     }
+                 });
+             });
+         });
+          // Activate the 'all' filter by default if it exists
+         const allButton = document.querySelector('.filter-buttons button[data-filter="all"]');
+         if (allButton) allButton.click(); 
+    }
+
+    function displayError(message) {
+        scheduleContent.innerHTML = ''; // Clear content
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+    }
+
+    // --- Main Function to Load Schedule --- 
+    async function loadSchedule() {
+        console.log('[Schedule] Attempting to load schedule from API...');
+        if(loadingIndicator) loadingIndicator.style.display = 'flex';
+        if(errorMessage) errorMessage.style.display = 'none';
+        scheduleContent.innerHTML = '';
+
+        try {
+            // Fetch uses the endpoint defined in server.js (which calls RapidAPI)
+            const fetchUrl = `/api/schedule`; 
+            console.log('[Schedule] Fetching schedule from URL:', fetchUrl);
+            
+            // Manual fetch troubleshooting
+            console.log('[Schedule] Before fetch call');
+            
+            const response = await fetch(fetchUrl);
+            console.log('[Schedule] After fetch call, response status:', response.status);
+            
+            if (!response.ok) {
+                 // Attempt to get error message from server JSON response
+                 let errorMsg = `Server error: ${response.status}`;
+                 try {
+                     const errorData = await response.json();
+                     errorMsg = errorData.error || errorMsg;
+                 } catch (jsonError) { /* Ignore if response isn't JSON */ }
+                 throw new Error(errorMsg);
+            }
+            
+            console.log('[Schedule] Response OK, getting JSON');
+            const games = await response.json();
+            console.log('[Schedule] Received games data:', games);
+
+            if (!Array.isArray(games)) {
+                 console.error('[Schedule] Invalid data format - not an array:', typeof games);
+                 throw new Error('Invalid data format received from server.');
+            }
+
+            if (games.length === 0) {
+                console.warn('[Schedule] Games array is empty');
+                scheduleContent.innerHTML = '<p class="no-games-message">No games found for the current season.</p>';
+                if(loadingIndicator) loadingIndicator.style.display = 'none';
+                return;
+            }
+
+            console.log('[Schedule] Hiding loading indicator and calling renderSchedule with', games.length, 'games');
+            if(loadingIndicator) loadingIndicator.style.display = 'none';
+            
+            // As a fallback, if games data isn't working, try with hardcoded sample data
+            if (games.length === 0 || !Array.isArray(games)) {
+                console.warn('[Schedule] Using fallback data');
+                const fallbackGames = getSampleGames();
+                renderSchedule(fallbackGames);
+            } else {
+                renderSchedule(games);
+            }
+
+        } catch (error) {
+            console.error('[Schedule] Error loading schedule:', error);
+            displayError(error.message || 'Failed to load schedule. Please try again.');
+        }
     }
     
-    // Function to fetch and display the schedule
-    function fetchSchedule() {
-        // Show loading indicator
-        loadingIndicator.style.display = 'flex';
-        errorMessage.style.display = 'none';
-        
-        // Fetch from NBA API
-        fetch(`https://data.nba.net/10s/prod/v1/${CURRENT_SEASON}/schedule.json`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Hide loading indicator
-                loadingIndicator.style.display = 'none';
-                
-                // Check if data has the expected structure
-                if (!data.league || !data.league.standard || data.league.standard.length === 0) {
-                    throw new Error('No schedule data available for the 2024-25 season yet');
-                }
-                
-                // Filter games for the Celtics
-                const celticsGames = data.league.standard.filter(game => 
-                    game.hTeam.teamId === CELTICS_TEAM_ID || game.vTeam.teamId === CELTICS_TEAM_ID
-                );
-                
-                // Render the schedule
-                renderSchedule(celticsGames);
-            })
-            .catch(error => {
-                console.error('Error fetching schedule:', error);
-                
-                // Hide loading indicator and show error message
-                loadingIndicator.style.display = 'none';
-                errorMessage.style.display = 'block';
-                
-                // Update error message with specific details
-                const errorParagraph = errorMessage.querySelector('p');
-                if (errorParagraph) {
-                    if (error.message.includes('2024-25 season')) {
-                        errorParagraph.innerHTML = 
-                            'The 2024-25 season schedule is not available yet. <br>' +
-                            'The NBA typically releases the full schedule in August.';
-                        
-                        // Try fetching the previous season as fallback
-                        tryFallbackSeason();
-                    } else {
-                        errorParagraph.textContent = 'There was an error loading the schedule. Please try again later.';
+    // Fallback sample data in case API fails
+    function getSampleGames() {
+        return [
+            {
+                id: "1",
+                date: {
+                    start: "2024-03-28T17:30:00.000Z"
+                },
+                teams: {
+                    home: {
+                        id: "2",
+                        name: "Boston Celtics"
+                    },
+                    visitors: {
+                        id: "21",
+                        name: "Milwaukee Bucks"
                     }
+                },
+                scores: {
+                    home: { points: null },
+                    visitors: { points: null }
+                },
+                status: {
+                    long: "Scheduled"
+                },
+                arena: {
+                    name: "TD Garden"
                 }
-            });
+            }
+        ];
     }
     
-    // Function to try loading the previous season as a fallback
-    function tryFallbackSeason() {
-        console.log('Trying fallback to previous season 2023-24');
-        
-        // Show loading indicator again
-        loadingIndicator.style.display = 'flex';
-        
-        fetch(`https://data.nba.net/10s/prod/v1/2023-24/schedule.json`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Hide loading indicator
-                loadingIndicator.style.display = 'none';
-                
-                // Filter games for the Celtics
-                const celticsGames = data.league.standard.filter(game => 
-                    game.hTeam.teamId === CELTICS_TEAM_ID || game.vTeam.teamId === CELTICS_TEAM_ID
-                );
-                
-                // Render the schedule with a note
-                renderSchedule(celticsGames);
-                
-                // Add a note that this is last season's schedule
-                const noteElement = document.createElement('div');
-                noteElement.className = 'schedule-note';
-                noteElement.innerHTML = '<strong>Note:</strong> Displaying the 2023-24 season schedule until the 2024-25 schedule is released.';
-                noteElement.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
-                noteElement.style.color = '#856404';
-                noteElement.style.padding = '10px';
-                noteElement.style.borderRadius = '5px';
-                noteElement.style.marginBottom = '20px';
-                noteElement.style.textAlign = 'center';
-                noteElement.style.border = '1px solid rgba(255, 193, 7, 0.3)';
-                
-                // Insert at the top of the schedule content
-                scheduleContent.insertBefore(noteElement, scheduleContent.firstChild);
-            })
-            .catch(error => {
-                console.error('Error fetching fallback schedule:', error);
-                
-                // Hide loading indicator and keep error message visible
-                loadingIndicator.style.display = 'none';
-            });
+    // Add event listener for the retry button
+    if (retryButton) {
+        retryButton.addEventListener('click', loadSchedule);
     }
-    
-    // Initialize retry button
-    retryButton.addEventListener('click', fetchSchedule);
     
     // Initial load
-    fetchSchedule();
+    loadSchedule();
 }); 

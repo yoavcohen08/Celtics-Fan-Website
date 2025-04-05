@@ -7,6 +7,7 @@ const session = require('express-session');
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Ticket = require('./models/Ticket');
+const fetch = require('node-fetch');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -262,6 +263,304 @@ app.get('/api/games', (req, res) => {
         res.status(500).json({ message: 'Error fetching games' });
     }
 });
+
+// Schedule API endpoint
+app.get('/api/schedule', async (req, res) => {
+    try {
+        // Add CORS headers
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+        
+        console.log('[API] Schedule endpoint called');
+        
+        // Try to fetch from RapidAPI first
+        try {
+            const rapidApiResponse = await fetch('https://api-nba-v1.p.rapidapi.com/games?season=2024&team=2', { // Using season=2024 for 2024-2025
+                method: 'GET',
+                headers: {
+                    'x-rapidapi-key': 'd0b0505031msh7b0c1ca8afc775dp1696a9jsn1bc13e5477df',
+                    'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
+                }
+            });
+            
+            if (rapidApiResponse.ok) {
+                const apiData = await rapidApiResponse.json();
+                console.log('[API] Successfully fetched data from RapidAPI NBA');
+                
+                if (apiData && apiData.response && Array.isArray(apiData.response)) {
+                    // Process and return the RapidAPI data directly (already in the right format)
+                    console.log('[API] Found', apiData.response.length, 'games from RapidAPI');
+                    res.json(apiData.response);
+                    return;
+                } else {
+                    console.warn('[API] RapidAPI response missing expected format:', apiData);
+                    // Will continue to fallback below
+                }
+            } else {
+                console.warn('[API] RapidAPI request failed:', rapidApiResponse.status);
+                // Will continue to fallback below
+            }
+        } catch (apiError) {
+            console.error('[API] Error fetching from RapidAPI:', apiError);
+            // Will continue to fallback below
+        }
+        
+        // Fallback to local data if API fails
+        console.log('[API] Falling back to local games.json data');
+        const gamesData = JSON.parse(fs.readFileSync(gamesFile, 'utf8'));
+        console.log('[API] Games data loaded from file:', JSON.stringify(gamesData));
+        
+        // Transform the data to the format expected by schedule.js
+        const scheduledGames = gamesData.map(game => {
+            // Create a date object from the date and time
+            const [year, month, day] = game.date.split('-').map(num => parseInt(num));
+            const [time, period] = game.time.split(' ');
+            const [hour, minute] = time.split(':').map(num => parseInt(num));
+            
+            // Adjust hour for PM
+            let adjustedHour = hour;
+            if (period === 'PM' && hour < 12) {
+                adjustedHour += 12;
+            } else if (period === 'AM' && hour === 12) {
+                adjustedHour = 0;
+            }
+            
+            // Create ISO date string
+            const gameDate = new Date(year, month - 1, day, adjustedHour, minute);
+            
+            return {
+                id: game.id,
+                date: {
+                    start: gameDate.toISOString()
+                },
+                teams: {
+                    home: {
+                        id: game.location.includes('TD Garden') ? '2' : getOpponentTeamId(game.opponent),
+                        name: game.location.includes('TD Garden') ? 'Boston Celtics' : game.opponent
+                    },
+                    visitors: {
+                        id: game.location.includes('TD Garden') ? getOpponentTeamId(game.opponent) : '2',
+                        name: game.location.includes('TD Garden') ? game.opponent : 'Boston Celtics'
+                    }
+                },
+                scores: {
+                    home: { points: null },
+                    visitors: { points: null }
+                },
+                status: {
+                    long: 'Scheduled'
+                },
+                arena: {
+                    name: game.location
+                }
+            };
+        });
+        
+        console.log('[API] Transformed local games data:', JSON.stringify(scheduledGames));
+        res.json(scheduledGames);
+    } catch (error) {
+        console.error('Error fetching schedule:', error);
+        res.status(500).json({ error: 'Failed to load schedule data' });
+    }
+});
+
+// Standings API endpoint
+app.get('/api/standings', async (req, res) => {
+    try {
+        // Add CORS headers
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+        
+        console.log('[API] Standings endpoint called');
+        
+        // Try to fetch from RapidAPI
+        try {
+            const rapidApiResponse = await fetch('https://api-nba-v1.p.rapidapi.com/standings?league=standard&season=2024', {
+                method: 'GET',
+                headers: {
+                    'x-rapidapi-key': 'd0b0505031msh7b0c1ca8afc775dp1696a9jsn1bc13e5477df',
+                    'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
+                }
+            });
+            
+            if (rapidApiResponse.ok) {
+                const apiData = await rapidApiResponse.json();
+                console.log('[API] Successfully fetched standings from RapidAPI NBA');
+                
+                if (apiData && apiData.response && Array.isArray(apiData.response)) {
+                    res.json(apiData.response);
+                    return;
+                } else {
+                    console.warn('[API] RapidAPI standings response missing expected format:', apiData);
+                    // Will continue to fallback below
+                }
+            } else {
+                console.warn('[API] RapidAPI standings request failed:', rapidApiResponse.status);
+                // Will continue to fallback below
+            }
+        } catch (apiError) {
+            console.error('[API] Error fetching standings from RapidAPI:', apiError);
+            // Will continue to fallback below
+        }
+        
+        // If API fails, return mock data
+        console.log('[API] Returning mock standings data');
+        const mockStandings = generateMockStandings();
+        res.json(mockStandings);
+        
+    } catch (error) {
+        console.error('Error in standings endpoint:', error);
+        res.status(500).json({ error: 'Failed to fetch standings data' });
+    }
+});
+
+// Helper function to generate mock standings data if API fails
+function generateMockStandings() {
+    const teams = [
+        { id: 2, name: "Boston Celtics", nickname: "Celtics", code: "BOS", conference: "East", division: "Atlantic" },
+        { id: 20, name: "Miami Heat", nickname: "Heat", code: "MIA", conference: "East", division: "Southeast" },
+        { id: 24, name: "New York Knicks", nickname: "Knicks", code: "NYK", conference: "East", division: "Atlantic" },
+        { id: 27, name: "Philadelphia 76ers", nickname: "76ers", code: "PHI", conference: "East", division: "Atlantic" },
+        { id: 4, name: "Brooklyn Nets", nickname: "Nets", code: "BKN", conference: "East", division: "Atlantic" },
+        { id: 21, name: "Milwaukee Bucks", nickname: "Bucks", code: "MIL", conference: "East", division: "Central" },
+        { id: 7, name: "Cleveland Cavaliers", nickname: "Cavaliers", code: "CLE", conference: "East", division: "Central" },
+        { id: 26, name: "Orlando Magic", nickname: "Magic", code: "ORL", conference: "East", division: "Southeast" },
+        { id: 15, name: "Indiana Pacers", nickname: "Pacers", code: "IND", conference: "East", division: "Central" },
+        { id: 1, name: "Atlanta Hawks", nickname: "Hawks", code: "ATL", conference: "East", division: "Southeast" },
+        { id: 6, name: "Chicago Bulls", nickname: "Bulls", code: "CHI", conference: "East", division: "Central" },
+        { id: 38, name: "Toronto Raptors", nickname: "Raptors", code: "TOR", conference: "East", division: "Atlantic" },
+        { id: 5, name: "Charlotte Hornets", nickname: "Hornets", code: "CHA", conference: "East", division: "Southeast" },
+        { id: 41, name: "Washington Wizards", nickname: "Wizards", code: "WAS", conference: "East", division: "Southeast" },
+        { id: 10, name: "Detroit Pistons", nickname: "Pistons", code: "DET", conference: "East", division: "Central" },
+        { id: 14, name: "Houston Rockets", nickname: "Rockets", code: "HOU", conference: "West", division: "Southwest" },
+        { id: 9, name: "Denver Nuggets", nickname: "Nuggets", code: "DEN", conference: "West", division: "Northwest" },
+        { id: 16, name: "LA Clippers", nickname: "Clippers", code: "LAC", conference: "West", division: "Pacific" },
+        { id: 28, name: "Phoenix Suns", nickname: "Suns", code: "PHX", conference: "West", division: "Pacific" },
+        { id: 17, name: "Los Angeles Lakers", nickname: "Lakers", code: "LAL", conference: "West", division: "Pacific" },
+        { id: 8, name: "Dallas Mavericks", nickname: "Mavericks", code: "DAL", conference: "West", division: "Southwest" },
+        { id: 40, name: "Utah Jazz", nickname: "Jazz", code: "UTA", conference: "West", division: "Northwest" },
+        { id: 25, name: "Oklahoma City Thunder", nickname: "Thunder", code: "OKC", conference: "West", division: "Northwest" },
+        { id: 22, name: "Minnesota Timberwolves", nickname: "Timberwolves", code: "MIN", conference: "West", division: "Northwest" },
+        { id: 19, name: "Memphis Grizzlies", nickname: "Grizzlies", code: "MEM", conference: "West", division: "Southwest" },
+        { id: 30, name: "Sacramento Kings", nickname: "Kings", code: "SAC", conference: "West", division: "Pacific" },
+        { id: 11, name: "Golden State Warriors", nickname: "Warriors", code: "GSW", conference: "West", division: "Pacific" },
+        { id: 23, name: "New Orleans Pelicans", nickname: "Pelicans", code: "NOP", conference: "West", division: "Southwest" },
+        { id: 29, name: "Portland Trail Blazers", nickname: "Trail Blazers", code: "POR", conference: "West", division: "Northwest" },
+        { id: 31, name: "San Antonio Spurs", nickname: "Spurs", code: "SAS", conference: "West", division: "Southwest" }
+    ];
+    
+    return teams.map((team, index) => {
+        // Generate random stats appropriate for team's strength
+        const isEastern = team.conference === "East";
+        const rank = isEastern ? 
+            [2, 20, 24, 27, 4, 21, 7, 26, 15, 1, 6, 38, 5, 41, 10].indexOf(team.id) + 1 : 
+            [14, 9, 16, 28, 17, 8, 40, 25, 22, 19, 30, 11, 23, 29, 31].indexOf(team.id) + 1;
+        
+        // Better teams have higher win percentage
+        const winPct = Math.max(0.1, Math.min(0.9, 1 - (rank / (isEastern ? 16 : 16))));
+        const gamesPlayed = 82;
+        const wins = Math.round(gamesPlayed * winPct);
+        const losses = gamesPlayed - wins;
+        
+        // Randomize home/away distribution
+        const homeWins = Math.round(wins * (0.6 + Math.random() * 0.1));
+        const homeLosses = Math.round(losses * (0.4 + Math.random() * 0.1));
+        const awayWins = wins - homeWins;
+        const awayLosses = losses - homeLosses;
+        
+        // Create last 10 games record
+        const last10Wins = Math.min(wins, Math.round(Math.random() * 5) + (10 - rank) / 3);
+        const last10Losses = 10 - last10Wins;
+        
+        // Generate streak
+        const streakType = Math.random() > 0.5 ? "W" : "L";
+        const streakCount = Math.floor(Math.random() * 5) + 1;
+        
+        // Generate points
+        const ppg = Math.round((115 - rank * 0.5 + Math.random() * 10) * 10) / 10;
+        const oppg = Math.round((108 + rank * 0.4 + Math.random() * 8) * 10) / 10;
+        
+        return {
+            team: {
+                id: team.id,
+                name: team.name,
+                nickname: team.nickname,
+                code: team.code
+            },
+            conference: {
+                name: team.conference,
+                rank: rank
+            },
+            division: {
+                name: team.division,
+                rank: 0 // Not used in the UI
+            },
+            games: {
+                played: gamesPlayed,
+                win: {
+                    total: wins,
+                    percentage: winPct,
+                    home: homeWins,
+                    away: awayWins
+                },
+                loss: {
+                    total: losses,
+                    home: homeLosses,
+                    away: awayLosses
+                },
+                last_10: {
+                    win: last10Wins,
+                    loss: last10Losses
+                }
+            },
+            streak: {
+                count: streakCount,
+                type: streakType
+            },
+            points: {
+                for: ppg,
+                against: oppg
+            }
+        };
+    });
+}
+
+// Helper function to get team ID from opponent name
+function getOpponentTeamId(opponentName) {
+    const teamMap = {
+        'Milwaukee Bucks': '21',
+        'Philadelphia 76ers': '27',
+        'Charlotte Hornets': '5',
+        'Atlanta Hawks': '1',
+        'Brooklyn Nets': '4',
+        'Chicago Bulls': '6',
+        'Cleveland Cavaliers': '7',
+        'Dallas Mavericks': '8',
+        'Denver Nuggets': '9',
+        'Detroit Pistons': '10',
+        'Golden State Warriors': '11',
+        'Houston Rockets': '14',
+        'Indiana Pacers': '15',
+        'LA Clippers': '16',
+        'Los Angeles Lakers': '17',
+        'Memphis Grizzlies': '19',
+        'Miami Heat': '20',
+        'Minnesota Timberwolves': '22',
+        'New Orleans Pelicans': '23',
+        'New York Knicks': '24',
+        'Oklahoma City Thunder': '25',
+        'Orlando Magic': '26',
+        'Phoenix Suns': '28',
+        'Portland Trail Blazers': '29',
+        'Sacramento Kings': '30',
+        'San Antonio Spurs': '31',
+        'Toronto Raptors': '38',
+        'Utah Jazz': '40',
+        'Washington Wizards': '41'
+    };
+    
+    return teamMap[opponentName] || '0'; // Return '0' if team not found
+}
 
 // Ticket request routes
 app.post('/api/tickets', async (req, res) => {

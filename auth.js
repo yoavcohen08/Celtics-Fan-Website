@@ -32,7 +32,6 @@ function updateNavigation(isAuthenticated, user) {
         }
         
         authNav.innerHTML = `
-            <span class="welcome">Welcome, ${user.firstName}</span>
             <a href="/profile.html" class="profile-btn">
                 <i class="fas fa-user"></i>
                 My Profile
