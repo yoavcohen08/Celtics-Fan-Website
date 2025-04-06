@@ -1062,7 +1062,9 @@
         // Check if user is authenticated
         async function checkAccessAndRender() {
             try {
-                const response = await fetch('/api/auth/status');
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 const contentContainer = document.getElementById('content-container');
                 

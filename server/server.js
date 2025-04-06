@@ -19,6 +19,9 @@ const port = process.env.PORT || 3000;
 // Connect to MongoDB
 connectDB();
 
+// Enable trust proxy for hosting platforms like Render
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -27,7 +30,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'celtics_session_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 }));
 
 // Create necessary JSON files if they don't exist

@@ -116,7 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Using server-side endpoint to proxy the API call
             // This helps keep API keys secure
-            const response = await fetch(CURRENT_STANDINGS_API_ENDPOINT);
+            const response = await fetch(CURRENT_STANDINGS_API_ENDPOINT, {
+                credentials: 'include'
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);

@@ -314,7 +314,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Manual fetch troubleshooting
             console.log('[Schedule] Before fetch call');
             
-            const response = await fetch(fetchUrl);
+            const response = await fetch(fetchUrl, {
+                credentials: 'include'
+            });
             console.log('[Schedule] After fetch call, response status:', response.status);
             
             if (!response.ok) {

@@ -59,7 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentSeason = '2024'; // Fetching 2024 season data
             
             console.log(`[Roster] Fetching roster data for season ${currentSeason}, player IDs: ${playerIdsString}`);
-            const response = await fetch(`/api/roster?season=${currentSeason}&playerIds=${playerIdsString}`); 
+            const response = await fetch(`/api/roster?season=${currentSeason}&playerIds=${playerIdsString}`, {
+                credentials: 'include'
+            }); 
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({})); // Try to get error details
