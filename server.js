@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -21,13 +24,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname)));
 app.use(session({
-    secret: 'celtics-secret-key',
+    secret: process.env.SESSION_SECRET || 'celtics_session_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        secure: false, // set to true if using https
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+    cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
 // Create necessary JSON files if they don't exist
@@ -180,19 +180,26 @@ app.post('/auth/register', async (req, res) => {
 
 app.post('/auth/login', async (req, res) => {
     try {
+        console.log('Login attempt with email:', req.body.email);
         const { email, password } = req.body;
 
         // Find user
+        console.log('Searching for user in database...');
         const user = await User.findOne({ email });
         if (!user) {
+            console.log('User not found with email:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        console.log('User found:', user._id);
 
         // Check password
+        console.log('Verifying password...');
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
+            console.log('Password verification failed for user:', user._id);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        console.log('Password verified successfully');
 
         // Set session
         req.session.user = {
@@ -202,6 +209,7 @@ app.post('/auth/login', async (req, res) => {
             email: user.email,
             isAdmin: user.isAdmin
         };
+        console.log('Session created for user:', user._id);
 
         res.json({ message: 'Login successful' });
     } catch (error) {
@@ -1327,6 +1335,46 @@ app.get('/profile', (req, res) => {
 
 app.get('/getTickets', (req, res) => {
     res.sendFile(path.join(__dirname, 'getTickets.html'));
+});
+
+// Temporary route to create a test user (REMOVE IN PRODUCTION)
+app.get('/dev/create-test-user', async (req, res) => {
+    try {
+        // Check if a test user already exists
+        const existingUser = await User.findOne({ email: 'test@example.com' });
+        if (existingUser) {
+            return res.json({ 
+                message: 'Test user already exists', 
+                userId: existingUser._id,
+                email: 'test@example.com',
+                password: 'password123'
+            });
+        }
+        
+        // Create a new test user
+        const testUser = new User({
+            firstName: 'Test',
+            lastName: 'User',
+            email: 'test@example.com',
+            password: 'password123',
+            phone: '123-456-7890',
+            location: 'Boston',
+            isAdmin: true // Making this an admin user for testing
+        });
+        
+        await testUser.save();
+        console.log('Test user created with ID:', testUser._id);
+        
+        res.json({ 
+            message: 'Test user created successfully', 
+            userId: testUser._id,
+            email: 'test@example.com',
+            password: 'password123'
+        });
+    } catch (error) {
+        console.error('Error creating test user:', error);
+        res.status(500).json({ message: 'Error creating test user', error: error.message });
+    }
 });
 
 // Start server
