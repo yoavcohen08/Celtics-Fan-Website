@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const User = require('./models/User');
 const Ticket = require('./models/Ticket');
 const fetch = require('node-fetch');
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -264,49 +265,154 @@ app.get('/api/games', (req, res) => {
     }
 });
 
-// Schedule API endpoint
+// Use the WORKING API key found in schedule/standings
+const NBA_API_KEY = 'd0b0505031msh7b0c1ca8afc775dp1696a9jsn1bc13e5477df';
+const NBA_API_HOST = 'api-nba-v1.p.rapidapi.com';
+
+// Function to make API calls (already uses the constants above)
+async function callNbaApi(endpoint, queryParams = {}) {
+    let url = `https://${NBA_API_HOST}/${endpoint}`;
+    if (Object.keys(queryParams).length > 0) {
+        url += `?${new URLSearchParams(queryParams).toString()}`;
+    }
+    
+    console.log(`[API] Calling NBA API: ${url}`)
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-RapidAPI-Key': NBA_API_KEY,
+                'X-RapidAPI-Host': NBA_API_HOST
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[API] Error fetching from RapidAPI NBA (${response.status}): ${errorText}`);
+            throw new Error(`API call failed with status ${response.status}`);
+        }
+        
+        console.log("[API] Successfully fetched data from RapidAPI NBA");
+        return await response.json();
+    } catch (error) {
+        console.error(`[API] Error during fetch to RapidAPI NBA: ${error.message}`);
+        throw error; // Re-throw the error to be handled by the calling function
+    }
+}
+
+// Endpoint to get roster and player stats
+app.get('/api/roster', async (req, res) => {
+    // Expect playerIds (comma-separated) and season
+    const { season, playerIds } = req.query; 
+    console.log(`[API] Roster endpoint called. Season: ${season}, PlayerIds: ${playerIds}`);
+
+    // Validate params
+    if (!season || !playerIds) {
+        return res.status(400).json({ error: 'Season and PlayerIds parameters are required' });
+    }
+    
+    const requestedPlayerIds = playerIds.split(',').map(id => id.trim()).filter(id => id); // Ensure no empty IDs
+    if (requestedPlayerIds.length === 0) {
+         return res.status(400).json({ error: 'PlayerIds parameter cannot be empty' });
+    }
+    
+    console.log(`[API] Processing ${requestedPlayerIds.length} requested player IDs:`, requestedPlayerIds);
+
+    try {
+        // Fetch player info and statistics concurrently for each requested ID
+        const playerPromises = requestedPlayerIds.map(playerId => {
+            // Fetch both player info and stats in parallel for this ID
+            const playerInfoPromise = axios.get(`https://api-nba-v1.p.rapidapi.com/players?id=${playerId}`, {
+                headers: {
+                    'X-RapidAPI-Key': NBA_API_KEY,
+                    'X-RapidAPI-Host': NBA_API_HOST
+                }
+            });
+
+            // Use the requested season parameter (2024 for 2024-2025 season)
+            console.log(`[API] Fetching stats for player ${playerId} for season ${season}`);
+            const playerStatsPromise = axios.get(`https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=${season}`, {
+                headers: {
+                    'X-RapidAPI-Key': NBA_API_KEY,
+                    'X-RapidAPI-Host': NBA_API_HOST
+                }
+            });
+
+            // Resolve when both calls are done for this player
+            return Promise.all([playerInfoPromise, playerStatsPromise])
+                .then(([infoResponse, statsResponse]) => ({
+                    playerId: playerId,
+                    playerData: infoResponse.data.response[0] || { id: playerId, error: 'Info not found' }, // Player Info
+                    statsData: statsResponse.data // Full Stats Response Object
+                }))
+                .catch(error => {
+                    console.error(`[API] Error fetching data for player ID ${playerId}:`, error.message);
+                    // Return error structure for this player
+                    return {
+                        playerId: playerId,
+                        playerData: { id: playerId, error: 'Info fetch failed' },
+                        statsData: { response: [], error: `Failed to fetch data: ${error.message}` }
+                    };
+                });
+        });
+
+        // Wait for all player data requests to complete
+        const results = await Promise.all(playerPromises);
+        console.log(`[API] Finished fetching data for ${results.length} players.`);
+
+        // Combine into the desired format
+        const playersData = results.map(result => {
+            return {
+                player: result.playerData,
+                statistics: {
+                    response: (result.statsData && Array.isArray(result.statsData.response))
+                                ? result.statsData.response 
+                                : [],
+                    error: result.statsData.error || null 
+                }
+            };
+        });
+
+        console.log(`[API] Returning combined data for ${playersData.length} players.`);
+        res.json(playersData);
+
+    } catch (error) {
+        // Handle unexpected errors during the process
+        console.error('[API] Roster endpoint unexpected error:', error.message);
+        res.status(500).json({ error: 'Failed to process roster request' });
+    }
+});
+
+// Schedule API endpoint - NOW USING callNbaApi
 app.get('/api/schedule', async (req, res) => {
+    const { season, team } = req.query;
+    const currentSeason = season || '2024';
+    const teamId = team || '2'; // Default to Celtics (ID 2)
+    console.log(`[API] Schedule endpoint called for team: ${teamId}, season: ${currentSeason}`);
+    
     try {
         // Add CORS headers
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
         
-        console.log('[API] Schedule endpoint called');
-        
-        // Try to fetch from RapidAPI first
+        // Try to fetch from RapidAPI using the shared function
         try {
-            const rapidApiResponse = await fetch('https://api-nba-v1.p.rapidapi.com/games?season=2024&team=2', { // Using season=2024 for 2024-2025
-                method: 'GET',
-                headers: {
-                    'x-rapidapi-key': 'd0b0505031msh7b0c1ca8afc775dp1696a9jsn1bc13e5477df',
-                    'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-                }
-            });
+            const apiData = await callNbaApi('games', { season: currentSeason, team: teamId });
             
-            if (rapidApiResponse.ok) {
-                const apiData = await rapidApiResponse.json();
-                console.log('[API] Successfully fetched data from RapidAPI NBA');
-                
-                if (apiData && apiData.response && Array.isArray(apiData.response)) {
-                    // Process and return the RapidAPI data directly (already in the right format)
-                    console.log('[API] Found', apiData.response.length, 'games from RapidAPI');
-                    res.json(apiData.response);
-                    return;
-                } else {
-                    console.warn('[API] RapidAPI response missing expected format:', apiData);
-                    // Will continue to fallback below
-                }
+            if (apiData && apiData.response && Array.isArray(apiData.response)) {
+                console.log(`[API] Found ${apiData.response.length} games from RapidAPI for team ${teamId}`);
+                res.json(apiData.response);
+                return;
             } else {
-                console.warn('[API] RapidAPI request failed:', rapidApiResponse.status);
-                // Will continue to fallback below
+                console.warn('[API] RapidAPI schedule response missing expected format:', apiData);
             }
         } catch (apiError) {
-            console.error('[API] Error fetching from RapidAPI:', apiError);
-            // Will continue to fallback below
+            console.error('[API] Error fetching schedule from RapidAPI:', apiError);
         }
         
         // Fallback to local data if API fails
-        console.log('[API] Falling back to local games.json data');
+        console.log('[API] Falling back to local games.json data for schedule');
         const gamesData = JSON.parse(fs.readFileSync(gamesFile, 'utf8'));
         console.log('[API] Games data loaded from file:', JSON.stringify(gamesData));
         
@@ -358,54 +464,43 @@ app.get('/api/schedule', async (req, res) => {
         
         console.log('[API] Transformed local games data:', JSON.stringify(scheduledGames));
         res.json(scheduledGames);
+
     } catch (error) {
         console.error('Error fetching schedule:', error);
         res.status(500).json({ error: 'Failed to load schedule data' });
     }
 });
 
-// Standings API endpoint
+// Standings API endpoint - NOW USING callNbaApi
 app.get('/api/standings', async (req, res) => {
+    const { league, season } = req.query;
+    const currentLeague = league || 'standard';
+    const currentSeason = season || '2024';
+    console.log(`[API] Standings endpoint called for league: ${currentLeague}, season: ${currentSeason}`);
+
     try {
         // Add CORS headers
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
         
-        console.log('[API] Standings endpoint called');
-        
-        // Try to fetch from RapidAPI
+        // Try to fetch from RapidAPI using the shared function
         try {
-            const rapidApiResponse = await fetch('https://api-nba-v1.p.rapidapi.com/standings?league=standard&season=2024', {
-                method: 'GET',
-                headers: {
-                    'x-rapidapi-key': 'd0b0505031msh7b0c1ca8afc775dp1696a9jsn1bc13e5477df',
-                    'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-                }
-            });
-            
-            if (rapidApiResponse.ok) {
-                const apiData = await rapidApiResponse.json();
+            const apiData = await callNbaApi('standings', { league: currentLeague, season: currentSeason });
+
+            if (apiData && apiData.response && Array.isArray(apiData.response)) {
                 console.log('[API] Successfully fetched standings from RapidAPI NBA');
-                
-                if (apiData && apiData.response && Array.isArray(apiData.response)) {
-                    res.json(apiData.response);
-                    return;
-                } else {
-                    console.warn('[API] RapidAPI standings response missing expected format:', apiData);
-                    // Will continue to fallback below
-                }
+                res.json(apiData.response);
+                return;
             } else {
-                console.warn('[API] RapidAPI standings request failed:', rapidApiResponse.status);
-                // Will continue to fallback below
+                console.warn('[API] RapidAPI standings response missing expected format:', apiData);
             }
         } catch (apiError) {
             console.error('[API] Error fetching standings from RapidAPI:', apiError);
-            // Will continue to fallback below
         }
         
         // If API fails, return mock data
-        console.log('[API] Returning mock standings data');
-        const mockStandings = generateMockStandings();
+        console.log('[API] Falling back to mock standings data');
+        const mockStandings = generateMockStandings(); 
         res.json(mockStandings);
         
     } catch (error) {
