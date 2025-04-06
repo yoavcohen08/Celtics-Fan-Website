@@ -163,12 +163,12 @@ async function checkAdminStatus() {
             if (status === 401 || status === 403) {
                 showNotification('Please log in to access admin panel', 'error');
                 setTimeout(() => {
-                    window.location.href = '/login.html?redirect=admin.html';
+                    window.location.href = '/login?redirect=/admin';
                 }, 1500);
             } else {
                 showNotification(`Server error (${status}). Please try again later.`, 'error');
                 setTimeout(() => {
-                    window.location.href = '/MYweb.html';
+                    window.location.href = '/';
                 }, 1500);
             }
             return;
@@ -179,7 +179,7 @@ async function checkAdminStatus() {
         if (!data.isAuthenticated) {
             showNotification('Please log in to access admin panel', 'error');
             setTimeout(() => {
-                window.location.href = '/login.html?redirect=admin.html';
+                window.location.href = '/login?redirect=/admin';
             }, 1500);
             return;
         }
@@ -187,7 +187,7 @@ async function checkAdminStatus() {
         if (!data.isAdmin) {
             showNotification('Access Denied: Admin privileges required', 'error');
             setTimeout(() => {
-                window.location.href = '/MYweb.html';
+                window.location.href = '/';
             }, 1500);
             return;
         }
@@ -1208,11 +1208,30 @@ function loadTickets() {
                 return;
             }
             
-            // Populate filter dropdowns with ticket data
-            populateTicketFilters(tickets);
-            
-            // Display tickets
-            displayTickets(tickets);
+            // Recalculate prices for all tickets
+            Promise.all(tickets.map(async (ticket) => {
+                // Recalculate and update price in the database
+                await recalculateAndUpdateTicketPrice(ticket);
+                return ticket;
+            }))
+            .then(() => {
+                console.log('All ticket prices recalculated');
+                
+                // Populate filter dropdowns with ticket data
+                populateTicketFilters(tickets);
+                
+                // Display tickets
+                displayTickets(tickets);
+            })
+            .catch(error => {
+                console.error('Error recalculating ticket prices:', error);
+                
+                // Populate filter dropdowns with ticket data
+                populateTicketFilters(tickets);
+                
+                // Display tickets anyway
+                displayTickets(tickets);
+            });
         })
         .catch(error => {
             console.error('Error loading tickets:', error);
@@ -1896,8 +1915,15 @@ async function deleteUser(userId) {
             throw new Error(errorData.error || 'Failed to delete user');
         }
         
+        // Get response data
+        const responseData = await response.json();
+        
         // Show success notification
-        showNotification('User deleted successfully', 'success');
+        const ticketsMessage = responseData.ticketsDeleted > 0 
+            ? ` and ${responseData.ticketsDeleted} associated ticket${responseData.ticketsDeleted === 1 ? '' : 's'}`
+            : '';
+        
+        showNotification(`User${ticketsMessage} deleted successfully`, 'success');
         
         // Reload users to refresh the table
         loadUsers();
@@ -2758,3 +2784,107 @@ function resetTicketFilters() {
     }
 }
 
+// Function to recalculate and update ticket price in the database
+async function recalculateAndUpdateTicketPrice(ticket) {
+    try {
+        // Create a temporary element to pass to calculateTicketPrice
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `<div class="ticket-card" data-ticket-id="${ticket._id}"></div>`;
+        document.body.appendChild(tempDiv);
+        
+        // Setup needed fields for price calculation
+        const sectionType = ticket.sectionType || '';
+        const section = ticket.section || '';
+        const quantity = parseInt(ticket.quantity) || 1;
+        
+        // Calculate price using the same algorithm
+        let basePrice = 0;
+        
+        // Determine base price based on section type
+        if (sectionType === 'Floor') {
+            basePrice = 750;
+        } else if (sectionType === 'VIP') {
+            basePrice = 600;
+        } else if (sectionType === 'Lower') {
+            basePrice = 350;
+        } else if (sectionType === 'Mid') {
+            basePrice = 225;
+        } else if (sectionType === 'Upper') {
+            basePrice = 120;
+        } else if (sectionType === 'Special') {
+            basePrice = 500;
+        }
+        
+        // Add price variations for premium sections
+        if (['FL20', 'FL21'].includes(section)) basePrice += 100;
+        if (['VIP12'].includes(section)) basePrice += 75;
+        if (['12', '21'].includes(section)) basePrice += 50;
+        if (['Garden Deck', 'Executive Suites'].includes(section)) basePrice += 150;
+        
+        // Apply quantity discount
+        let quantityMultiplier = 1;
+        if (quantity >= 5) {
+            quantityMultiplier = 0.9; // 10% discount for 5+ tickets
+        } else if (quantity >= 3) {
+            quantityMultiplier = 0.95; // 5% discount for 3-4 tickets
+        }
+        
+        const serviceFee = basePrice * 0.15;
+        const processingFee = 5;
+        
+        const baseTotal = basePrice * quantity;
+        const serviceFeeTotal = serviceFee * quantity;
+        const processingFeeTotal = processingFee * quantity;
+        const totalBeforeDiscount = baseTotal + serviceFeeTotal + processingFeeTotal;
+        const calculatedTotal = totalBeforeDiscount * quantityMultiplier;
+        
+        console.log(`Recalculated price for ticket ${ticket._id}:`, {
+            originalPrice: ticket.totalPrice,
+            calculatedPrice: calculatedTotal.toFixed(2),
+            basePrice,
+            serviceFee,
+            processingFee
+        });
+        
+        // Only update if price is different
+        if (Math.abs(parseFloat(ticket.totalPrice) - calculatedTotal) > 0.01) {
+            console.log(`Updating price in database for ticket ${ticket._id}`);
+            
+            // Update price in database
+            const response = await fetch(`/api/tickets/${ticket._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    basePrice: basePrice,
+                    serviceFee: serviceFee,
+                    processingFee: processingFee,
+                    totalPrice: calculatedTotal
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update ticket price');
+            }
+            
+            const result = await response.json();
+            console.log(`Price updated successfully for ticket ${ticket._id}`);
+            
+            // Update the ticket object
+            ticket.basePrice = basePrice;
+            ticket.serviceFee = serviceFee;
+            ticket.processingFee = processingFee;
+            ticket.totalPrice = calculatedTotal;
+        }
+        
+        // Clean up
+        tempDiv.remove();
+        
+        return calculatedTotal;
+    } catch (error) {
+        console.error(`Error recalculating price for ticket ${ticket._id}:`, error);
+        return null;
+    }
+}

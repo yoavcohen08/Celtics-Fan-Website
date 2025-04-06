@@ -25,14 +25,14 @@ function updateNavigation(isAuthenticated, user) {
             localStorage.setItem('isAdmin', 'true');
             localStorage.setItem('adminCheckTime', Date.now().toString());
             
-            adminLink = `<a href="/admin.html" class="admin-btn" onclick="event.preventDefault(); navigateToAdmin(event)">Admin Dashboard</a>`;
+            adminLink = `<a href="/admin" class="admin-btn" onclick="event.preventDefault(); navigateToAdmin(event)">Admin Dashboard</a>`;
         } else {
             localStorage.setItem('isAdmin', 'false');
             localStorage.setItem('adminCheckTime', Date.now().toString());
         }
         
         authNav.innerHTML = `
-            <a href="/profile.html" class="profile-btn">
+            <a href="/profile" class="profile-btn">
                 <i class="fas fa-user"></i>
                 My Profile
             </a>
@@ -75,11 +75,12 @@ function updateNavigation(isAuthenticated, user) {
 // Function to handle smooth navigation to admin page
 function navigateToAdmin(event) {
     // If we're already on the admin page, don't navigate
-    if (window.location.pathname === '/admin.html') {
+    if (window.location.pathname === '/admin') {
         return;
     }
     
-    window.location.href = '/admin.html';
+    // Use replace to prevent adding to browser history
+    window.location.replace('/admin');
 }
 
 // Function to check authentication status
@@ -115,7 +116,7 @@ async function handleLogout(event) {
             console.log('Logout successful');
             
             // Redirect to home page
-            window.location.href = '/MYweb.html';
+            window.location.href = '/';
         } else {
             const data = await response.json();
             console.error('Logout failed:', data.message);
@@ -338,6 +339,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('fade-in');
 });
 
+// Add a helper function to check if a link is a news link
+function isNewsLink(href) {
+    if (!href) return false;
+    return href === '/#news' || 
+           href === '/news' || 
+           href.includes('#news') ||
+           href.endsWith('#news');
+}
+
 // Page transition handler
 function setupPageTransitions() {
     // Create the preloader
@@ -351,10 +361,13 @@ function setupPageTransitions() {
 
     // Add click handlers to all internal links
     document.querySelectorAll('a').forEach(link => {
+        const href = link.getAttribute('href');
+        
         // Skip links that should not have transitions
         if (link.hostname === window.location.hostname && 
             !link.hasAttribute('data-no-transition') &&
-            !link.getAttribute('href').startsWith('#')) {
+            !href.startsWith('#') &&
+            !isNewsLink(href)) {
             
             // Skip links with onclick handlers but allow our own logout handler
             const onclickAttr = link.getAttribute('onclick');

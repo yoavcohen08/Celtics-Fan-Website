@@ -1,3 +1,5 @@
+// Load environment variables if needed
+require('dotenv').config();
 const mongoose = require('mongoose');
 
 const connectDB = async () => {

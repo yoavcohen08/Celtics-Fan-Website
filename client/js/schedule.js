@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const gameActionsHTML = !gameStatus.isCompleted ? `
                 <div class="game-actions">
-                    <a href="getTickets.html?gameId=${game.id}" class="btn-ticket">Get Tickets</a>
+                    <a href="/getTickets?gameId=${game.id}" class="btn-ticket">Get Tickets</a>
                 </div>` : ''; 
 
             // Determine HTML for left and right teams based on home/away

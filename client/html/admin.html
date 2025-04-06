@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Boston Celtics</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="images/backgrounds/celticsweb.png" type="image/png">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" href="../images/backgrounds/celticsweb.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1573,29 +1573,29 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-left">
-                <a href="MYweb.html">
-                    <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
+                <a href="/">
+                    <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
                 </a>
                 <div class="nav-links">
-                    <a href="MYweb.html#news" class="nav-link">News</a>
-                    <a href="schedule.html" class="nav-link">Schedule</a>
-                    <a href="roster.html" class="nav-link">Roster</a>
-                    <a href="standings.html" class="nav-link">Standings</a>
-                    <a href="getTickets.html" class="nav-link">Get Tickets</a>
+                    <a href="/#news" class="nav-link">News</a>
+                    <a href="/schedule" class="nav-link">Schedule</a>
+                    <a href="/roster" class="nav-link">Roster</a>
+                    <a href="/standings" class="nav-link">Standings</a>
+                    <a href="/getTickets" class="nav-link">Get Tickets</a>
                 </div>
             </div>
             <div class="nav-right">
                 <div id="auth-buttons" class="auth-buttons">
-                    <a href="login.html" class="btn btn-outline">Login</a>
-                    <a href="register.html" class="btn btn-outline">Sign Up</a>
+                    <a href="/login" class="btn btn-outline">Login</a>
+                    <a href="/register" class="btn btn-outline">Sign Up</a>
                 </div>
                 <div id="user-profile" class="user-profile" style="display: none;">
                     <button id="profile-btn" class="profile-btn">
-                        <img src="images/user.svg" alt="User" class="user-icon">
+                        <img src="../images/user.svg" alt="User" class="user-icon">
                         <span id="user-name">User</span>
                     </button>
                     <div id="profile-dropdown" class="profile-dropdown">
-                        <a href="profile.html">My Profile</a>
+                        <a href="/profile">My Profile</a>
                         <a href="#" id="logout-btn">Logout</a>
                     </div>
                 </div>
@@ -1610,17 +1610,17 @@
     <div class="mobile-menu">
         <div class="mobile-menu-links">
             <a href="#news" class="mobile-nav-link">News</a>
-            <a href="schedule.html" class="mobile-nav-link">Schedule</a>
-            <a href="roster.html" class="mobile-nav-link">Roster</a>
-            <a href="standings.html" class="mobile-nav-link">Standings</a>
-            <a href="getTickets.html" class="mobile-nav-link">Get Tickets</a>
+            <a href="/schedule" class="mobile-nav-link">Schedule</a>
+            <a href="/roster" class="mobile-nav-link">Roster</a>
+            <a href="/standings" class="mobile-nav-link">Standings</a>
+            <a href="/getTickets" class="mobile-nav-link">Get Tickets</a>
         </div>
         <div id="mobile-auth-links">
-            <a href="login.html" class="mobile-nav-link">Login</a>
-            <a href="register.html" class="mobile-nav-link">Register</a>
+            <a href="/login" class="mobile-nav-link">Login</a>
+            <a href="/register" class="mobile-nav-link">Register</a>
         </div>
         <div id="mobile-profile-links" style="display: none;">
-            <a href="profile.html" class="mobile-nav-link">My Profile</a>
+            <a href="/profile" class="mobile-nav-link">My Profile</a>
             <a href="#" id="mobile-logout-btn" class="mobile-nav-link">Logout</a>
         </div>
     </div>
@@ -1928,7 +1928,7 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
+                <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
                 <p class="footer-description">The most successful team in NBA history, with 18 championships and counting.</p>
                 <div class="social-links">
                     <a href="https://www.facebook.com/bostonceltics/" target="_blank" rel="noopener noreferrer">
@@ -1945,12 +1945,12 @@
             <div class="footer-section">
                 <h4>Quick Links</h4>
                 <ul class="footer-links">
-                    <li><a href="MYweb.html">Home</a></li>
-                    <li><a href="MYweb.html#news">News</a></li>
-                    <li><a href="schedule.html">Schedule</a></li>
-                    <li><a href="roster.html">Roster</a></li>
-                    <li><a href="standings.html">Standings</a></li>
-                    <li><a href="getTickets.html">Tickets</a></li>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/#news">News</a></li>
+                    <li><a href="/schedule">Schedule</a></li>
+                    <li><a href="/roster">Roster</a></li>
+                    <li><a href="/standings">Standings</a></li>
+                    <li><a href="/getTickets">Tickets</a></li>
                 </ul>
             </div>
             <div class="footer-section" id="footer-contact">
@@ -2002,8 +2002,8 @@
     </footer>
     <!-- Footer End -->
 
-    <script src="auth.js"></script>
-    <script src="navbar.js"></script>
-    <script src="admin.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/navbar.js"></script>
+    <script src="../js/admin.js"></script>
 </body>
 </html> 

@@ -1,5 +1,5 @@
 // Load environment variables
-require('dotenv').config();
+require('dotenv').config({path: '../.env'});
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -22,7 +22,7 @@ connectDB();
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, '../client')));
 app.use(session({
     secret: process.env.SESSION_SECRET || 'celtics_session_secret',
     resave: false,
@@ -31,9 +31,9 @@ app.use(session({
 }));
 
 // Create necessary JSON files if they don't exist
-const submissionsFile = path.join(__dirname, 'submissions.json');
-const usersFile = path.join(__dirname, 'users.json');
-const gamesFile = path.join(__dirname, 'games.json');
+const submissionsFile = path.join(__dirname, '../data/submissions.json');
+const usersFile = path.join(__dirname, '../data/users.json');
+const gamesFile = path.join(__dirname, '../data/games.json');
 
 [submissionsFile, usersFile, gamesFile].forEach(file => {
     if (!fs.existsSync(file)) {
@@ -950,8 +950,17 @@ app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Find and delete all tickets belonging to this user
+        const deletedTickets = await Ticket.deleteMany({ userId: req.params.id });
+        console.log(`Deleted ${deletedTickets.deletedCount} tickets for user ${req.params.id}`);
+        
+        // Delete the user
         await user.deleteOne();
-        res.json({ message: 'User deleted successfully' });
+        
+        res.json({ 
+            message: 'User deleted successfully', 
+            ticketsDeleted: deletedTickets.deletedCount 
+        });
     } catch (error) {
         console.error('Error deleting user:', error);
         if (error.kind === 'ObjectId') {
@@ -1184,13 +1193,17 @@ app.delete('/api/admin/tickets/:userId/:ticketId', async (req, res) => {
 // Update ticket for admin
 app.put('/api/tickets/:id', isAdmin, async (req, res) => {
     try {
-        const { game, section, sectionType, quantity, status, adminNotes } = req.body;
+        const { game, section, sectionType, quantity, status, adminNotes, totalPrice, basePrice, serviceFee, processingFee } = req.body;
         const ticketId = req.params.id;
         
         const ticket = await Ticket.findById(ticketId);
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
+        
+        console.log('Updating ticket:', ticketId);
+        console.log('Current total price in DB:', ticket.totalPrice);
+        console.log('Received calculated price from client:', totalPrice);
         
         // Update ticket fields
         ticket.game = game || ticket.game;
@@ -1200,12 +1213,13 @@ app.put('/api/tickets/:id', isAdmin, async (req, res) => {
         ticket.status = status || ticket.status;
         ticket.adminNotes = adminNotes;
         
-        // Recalculate prices if relevant fields changed
-        if (sectionType || quantity) {
-            const prices = ticket.calculatePrice();
-            ticket.basePrice = prices.basePrice;
-            ticket.totalPrice = prices.totalPrice;
-        }
+        // Always use the prices sent from the client (calculateTicketPrice function)
+        if (basePrice) ticket.basePrice = parseFloat(basePrice);
+        if (serviceFee) ticket.serviceFee = parseFloat(serviceFee);
+        if (processingFee) ticket.processingFee = parseFloat(processingFee);
+        if (totalPrice) ticket.totalPrice = parseFloat(totalPrice);
+        
+        console.log('Final price being saved to DB:', ticket.totalPrice);
         
         await ticket.save();
         
@@ -1320,22 +1334,22 @@ app.get('/api/check-admin', (req, res) => {
     }
 });
 
-// Route handlers for serving HTML files
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'MYweb.html'));
-});
+// Route handler function for HTML pages
+const sendHtmlPage = (page) => (req, res) => {
+    res.sendFile(path.join(__dirname, `../client/pages/${page}`));
+};
 
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
-app.get('/profile', (req, res) => {
-    res.sendFile(path.join(__dirname, 'profile.html'));
-});
-
-app.get('/getTickets', (req, res) => {
-    res.sendFile(path.join(__dirname, 'getTickets.html'));
-});
+// HTML routes
+app.get('/', sendHtmlPage('MYweb.html'));
+app.get('/login', sendHtmlPage('login.html'));
+app.get('/register', sendHtmlPage('register.html'));
+app.get('/profile', sendHtmlPage('profile.html'));
+app.get('/roster', sendHtmlPage('roster.html'));
+app.get('/schedule', sendHtmlPage('schedule.html'));
+app.get('/standings', sendHtmlPage('standings.html'));
+app.get('/getTickets', sendHtmlPage('getTickets.html'));
+app.get('/admin', sendHtmlPage('admin.html'));
+app.get('/news', sendHtmlPage('MYweb.html'));
 
 // Temporary route to create a test user (REMOVE IN PRODUCTION)
 app.get('/dev/create-test-user', async (req, res) => {

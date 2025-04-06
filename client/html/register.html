@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Boston Celtics Fan Page</title>
-    <link rel="icon" href="images/backgrounds/celticsweb.png" type="image/png">
+    <title>Register - Boston Celtics Fan Page</title>
+    <link rel="icon" href="../images/backgrounds/celticsweb.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../css/styles.css">
     <style>
         .auth-container {
-            max-width: 500px;
+            max-width: 700px;
             margin: 120px auto 80px;
             padding: 30px;
             background: rgba(0, 0, 0, 0.8);
@@ -36,7 +36,6 @@
             font-size: 2rem;
             margin-bottom: 0.8rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -65,7 +64,8 @@
             font-size: 0.95rem;
         }
 
-        .form-group input {
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 12px 16px;
             border-radius: 8px;
@@ -76,15 +76,18 @@
             transition: all 0.3s ease;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: var(--celtics-gold);
             box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .auth-form {
-            margin-bottom: 1.5rem;
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         .auth-btn {
@@ -110,112 +113,129 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .register-link {
+        .login-link {
             text-align: center;
             margin-top: 1.5rem;
             color: #ddd;
             font-size: 0.95rem;
         }
 
-        .register-link a {
+        .login-link a {
             color: var(--celtics-gold);
             text-decoration: none;
             font-weight: 500;
             transition: all 0.3s ease;
         }
 
-        .register-link a:hover {
+        .login-link a:hover {
             color: #d4a74a;
             text-decoration: underline;
         }
 
+        .error-message,
         .success-message {
-            background: rgba(76, 175, 80, 0.1);
-            color: #4CAF50;
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1.5rem;
             text-align: center;
             display: none;
-            border: 1px solid rgba(76, 175, 80, 0.2);
             font-weight: 500;
         }
 
         .error-message {
             background: rgba(244, 67, 54, 0.1);
             color: #f44336;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            display: none;
             border: 1px solid rgba(244, 67, 54, 0.2);
-            font-weight: 500;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.2);
         }
 
         .password-input {
             position: relative;
-            display: flex;
-            align-items: center;
         }
 
         .password-toggle {
             position: absolute;
             right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
             background: none;
             border: none;
             color: #999;
             cursor: pointer;
             font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
         }
 
         .password-toggle:hover {
             color: var(--celtics-gold);
         }
 
-        .form-footer {
-            margin-top: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #ddd;
-            font-size: 0.9rem;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--celtics-gold);
-        }
-
-        .forgot-password {
-            color: var(--celtics-gold);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .forgot-password:hover {
-            color: #d4a74a;
-            text-decoration: underline;
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .auth-container {
+                padding: 20px;
+                margin: 100px auto 60px;
+            }
         }
         
         /* Footer margin adjustment */
         .footer {
             margin-top: 80px;
+        }
+
+        /* Password toggle button styles */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            font-size: 16px;
+        }
+        
+        .password-toggle:hover {
+            color: #333;
+        }
+        
+        .form-input {
+            padding-right: 35px;
+        }
+        
+        /* Message styles */
+        #errorMessage, #successMessage {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+            text-align: center;
+        }
+        
+        #errorMessage {
+            background-color: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #d32f2f;
+        }
+        
+        #successMessage {
+            background-color: rgba(0, 128, 0, 0.1);
+            border: 1px solid rgba(0, 128, 0, 0.3);
+            color: #388e3c;
         }
     </style>
 </head>
@@ -223,21 +243,21 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-left">
-                <a href="MYweb.html">
-                    <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
+                <a href="/">
+                    <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
                 </a>
                 <div class="nav-links">
-                    <a href="MYweb.html#news" class="nav-link">News</a>
-                    <a href="schedule.html" class="nav-link">Schedule</a>
-                    <a href="roster.html" class="nav-link">Roster</a>
-                    <a href="standings.html" class="nav-link">Standings</a>
-                    <a href="getTickets.html" class="nav-link">Get Tickets</a>
+                    <a href="/#news" class="nav-link">News</a>
+                    <a href="/schedule" class="nav-link">Schedule</a>
+                    <a href="/roster" class="nav-link">Roster</a>
+                    <a href="/standings" class="nav-link">Standings</a>
+                    <a href="/getTickets" class="nav-link">Get Tickets</a>
                 </div>
             </div>
             <div class="nav-right">
-                <a href="login.html" class="btn btn-outline">Login</a>
-                <a href="register.html" class="btn btn-outline">Sign Up</a>
-                <a href="MYweb.html#footer-contact" class="btn btn-outline">Contact</a>
+                <a href="/login" class="btn btn-outline">Login</a>
+                <a href="/register" class="btn btn-outline">Sign Up</a>
+                <a href="/#footer-contact" class="btn btn-outline">Contact</a>
             </div>
             <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
                 <i class="fas fa-bars"></i>
@@ -247,52 +267,75 @@
 
     <div class="auth-container">
         <div class="auth-header">
-            <h1 class="auth-title"><i class="fas fa-user-circle"></i> Log In</h1>
-            <p class="auth-subtitle">Welcome back to the Celtics community</p>
+            <h1 class="auth-title"><i class="fas fa-user-plus"></i> Create Account</h1>
+            <p class="auth-subtitle">Join the Celtics community today</p>
         </div>
 
         <div id="errorMessage" class="error-message"></div>
         <div id="successMessage" class="success-message"></div>
 
-        <form id="loginForm" class="auth-form">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="password-input">
-                    <input type="password" id="password" name="password" required>
-                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" title="Toggle password visibility">
-                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
-                    </button>
+        <form id="registerForm" class="auth-form" onsubmit="handleRegistration(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" class="form-input" required>
                 </div>
             </div>
-            
-            <div class="form-footer">
-                <div class="remember-me">
-                    <input type="checkbox" id="remember" name="remember">
-                    <label for="remember">Remember me</label>
-                </div>
-                
-                <a href="#" class="forgot-password">Forgot password?</a>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-input" required>
             </div>
-            
-            <br>
-            
-            <button type="submit" class="auth-btn"><i class="fas fa-sign-in-alt"></i> Log In</button>
+
+            <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" class="form-input">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="location">Location</label>
+                <input type="text" id="location" name="location" class="form-input">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" class="form-input" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')" title="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')" title="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-btn"><i class="fas fa-user-plus"></i> Create Account</button>
         </form>
 
-        <div class="register-link">
-            Don't have an account? <a href="register.html">Sign up now</a>
+        <div class="login-link">
+            <p>Already have an account? <a href="/login">Sign in</a></p>
         </div>
     </div>
 
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
-                <img src="images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
+                <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
                 <p class="footer-description">The most successful team in NBA history, with 18 championships and counting.</p>
                 <div class="social-links">
                     <a href="https://www.facebook.com/bostonceltics/" target="_blank" rel="noopener noreferrer">
@@ -309,12 +352,12 @@
             <div class="footer-section">
                 <h4>Quick Links</h4>
                 <ul class="footer-links">
-                    <li><a href="MYweb.html">Home</a></li>
-                    <li><a href="MYweb.html#news">News</a></li>
-                    <li><a href="schedule.html">Schedule</a></li>
-                    <li><a href="roster.html">Roster</a></li>
-                    <li><a href="standings.html">Standings</a></li>
-                    <li><a href="getTickets.html">Tickets</a></li>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/#news">News</a></li>
+                    <li><a href="/schedule">Schedule</a></li>
+                    <li><a href="/roster">Roster</a></li>
+                    <li><a href="/standings">Standings</a></li>
+                    <li><a href="/getTickets">Tickets</a></li>
                 </ul>
             </div>
             <div class="footer-section" id="footer-contact">
@@ -365,60 +408,29 @@
         </div>
     </footer>
 
-    <script src="auth.js"></script>
     <script>
-        function showSuccessMessage(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-        }
-        
-        function showErrorMessage(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-        
-        function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-            
-            // Hide after 5 seconds
-            setTimeout(() => {
-                successDiv.style.display = 'none';
-            }, 5000);
-        }
-        
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
-            
-            // Hide after 5 seconds
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
         }
-        
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const icon = document.getElementById('passwordToggleIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
         }
-        
+
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
-            const icon = input.nextElementSibling.querySelector('i');
+            const toggleButton = input.nextElementSibling;
+            const icon = toggleButton.querySelector('i');
             
             if (input.type === 'password') {
                 input.type = 'text';
@@ -431,15 +443,12 @@
             }
         }
         
-        // Add event listener to form
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        
         function getRedirectUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             let redirectUrl = urlParams.get('redirect');
             
             if (!redirectUrl) {
-                redirectUrl = 'MYweb.html';
+                redirectUrl = "/";
             }
             
             // Make sure redirectUrl doesn't start with a slash if it's a relative path
@@ -449,101 +458,114 @@
             
             return redirectUrl;
         }
-        
-        async function handleLogin(event) {
+
+        async function handleRegistration(event) {
             event.preventDefault();
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            // Clear any existing error messages
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
             
-            if (!email || !password) {
-                showError('Please enter both email and password');
+            const registerBtn = document.querySelector('.auth-btn');
+            const originalText = registerBtn.innerHTML;
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value || '';
+            const location = document.getElementById('location').value || '';
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = originalText;
                 return;
             }
             
-            // Show loading state
-            const submitButton = document.querySelector('.auth-btn');
-            const originalText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            // Basic password strength check
+            if (password.length < 8) {
+                showError('Password should be at least 8 characters long');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = originalText;
+                return;
+            }
             
-            // Set timeout to prevent UI from getting stuck if request takes too long
-            const timeout = setTimeout(() => {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalText;
-                showError('Request is taking longer than expected. Please try again.');
-            }, 10000); // 10 second timeout
-            
-            const formData = {
-                email,
-                password
+            // Create the request data
+            const userData = { 
+                firstName, 
+                lastName, 
+                email, 
+                password,
+                phone,
+                location
             };
             
             try {
-                const response = await fetch('/auth/login', {
+                // Make the request
+                const response = await fetch('/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     credentials: 'include',
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(userData)
                 });
                 
-                // Clear the timeout since we got a response
-                clearTimeout(timeout);
-                
-                let data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    console.error('Error parsing response:', e);
-                }
-                
+                // Handle response
                 if (response.ok) {
                     // Get redirect URL if any
                     const redirectUrl = getRedirectUrl();
                     
-                    showSuccess('Login successful! Redirecting...');
+                    // Set success alert
+                    showSuccess('Registration successful! Redirecting...');
+                    
+                    // Redirect after a delay
                     setTimeout(() => {
                         window.location.href = redirectUrl;
                     }, 1500);
                 } else {
-                    showError(data?.message || 'Login failed. Please check your credentials and try again.');
-                    // Reset button state
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
+                    // Get error message
+                    const data = await response.json();
+                    showError(data.message || 'Registration failed. Please try again.');
+                    registerBtn.disabled = false;
+                    registerBtn.innerHTML = originalText;
                 }
             } catch (error) {
-                // Clear the timeout if there was an error
-                clearTimeout(timeout);
-                console.error('Login error:', error);
-                showError('An error occurred. Please try again later.');
-                // Reset button state
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalText;
+                console.error('Registration error:', error);
+                showError('Network error. Please check your connection and try again.');
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = originalText;
             }
         }
-        
+
         // Check if user is already logged in
         async function checkLoggedIn() {
             try {
                 const response = await fetch('/api/auth/status', {
                     credentials: 'include'
                 });
+                
+                if (!response.ok) {
+                    return; // Not logged in, or error - allow registration
+                }
+                
                 const data = await response.json();
                 
                 if (data.isAuthenticated) {
-                    const redirectUrl = getRedirectUrl();
-                    window.location.href = redirectUrl;
+                    window.location.href = "/";
                 }
             } catch (error) {
                 console.error('Error checking login status:', error);
             }
         }
-        
-        // Check auth status when page loads
+
         document.addEventListener('DOMContentLoaded', checkLoggedIn);
     </script>
-    <script src="navbar.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/navbar.js"></script>
 </body>
 </html> 

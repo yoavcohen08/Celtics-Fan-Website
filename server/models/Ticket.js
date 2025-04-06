@@ -68,26 +68,32 @@ TicketSchema.methods.calculatePrice = function() {
     // Base price by section type
     switch(this.sectionType) {
         case 'Floor':
-            basePrice = 500;
+            basePrice = 750;
             break;
         case 'VIP':
-            basePrice = 300;
+            basePrice = 600;
             break;
         case 'Lower':
-            basePrice = 200;
+            basePrice = 350;
             break;
         case 'Mid':
-            basePrice = 150;
+            basePrice = 225;
             break;
         case 'Upper':
-            basePrice = 100;
+            basePrice = 120;
             break;
         case 'Special':
-            basePrice = 250;
+            basePrice = 500;
             break;
         default:
             basePrice = 100;
     }
+    
+    // Add price variations for premium sections
+    if (['FL20', 'FL21'].includes(this.section)) basePrice += 100;
+    if (['VIP12'].includes(this.section)) basePrice += 75;
+    if (['12', '21'].includes(this.section)) basePrice += 50;
+    if (['Garden Deck', 'Executive Suites'].includes(this.section)) basePrice += 150;
     
     // Apply quantity discount
     let quantityMultiplier = 1;
@@ -97,18 +103,31 @@ TicketSchema.methods.calculatePrice = function() {
         quantityMultiplier = 0.95; // 5% discount for 3-4 tickets
     }
     
+    const serviceFee = basePrice * 0.15;
+    const processingFee = 5;
+    
+    const baseTotal = basePrice * this.quantity;
+    const serviceFeeTotal = serviceFee * this.quantity;
+    const processingFeeTotal = processingFee * this.quantity;
+    const totalBeforeDiscount = baseTotal + serviceFeeTotal + processingFeeTotal;
+    
     this.basePrice = basePrice;
-    this.totalPrice = (basePrice * this.quantity * quantityMultiplier).toFixed(2);
+    this.serviceFee = serviceFee;
+    this.processingFee = processingFee;
+    this.totalPrice = parseFloat((totalBeforeDiscount * quantityMultiplier).toFixed(2));
     
     return {
         basePrice: this.basePrice,
+        serviceFee: this.serviceFee,
+        processingFee: this.processingFee,
         totalPrice: this.totalPrice
     };
 };
 
-// Add a pre-save middleware to calculate prices
+// Add a pre-save middleware to calculate prices ONLY for new tickets
 TicketSchema.pre('save', function(next) {
-    if (!this.basePrice || !this.totalPrice) {
+    // Only calculate prices if this is a new ticket (not an update)
+    if (this.isNew && (!this.basePrice || !this.totalPrice)) {
         const prices = this.calculatePrice();
         this.basePrice = prices.basePrice;
         this.totalPrice = prices.totalPrice;

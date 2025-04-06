@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Boston Celtics Fan Page</title>
+    <link rel="icon" href="../images/backgrounds/celticsweb.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 120px auto 80px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(186, 150, 83, 0.2);
+            color: #fff;
+            position: relative;
+            z-index: 10;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--celtics-gold);
+            padding-bottom: 1.5rem;
+        }
+
+        .auth-title {
+            color: var(--celtics-gold);
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .auth-title i {
+            font-size: 1.8rem;
+        }
+
+        .auth-subtitle {
+            color: #ddd;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--celtics-gold);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(186, 150, 83, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--celtics-gold);
+            box-shadow: 0 0 0 2px rgba(186, 150, 83, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .auth-form {
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: var(--celtics-green);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-btn:hover {
+            background: #008f3e;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #ddd;
+            font-size: 0.95rem;
+        }
+
+        .register-link a {
+            color: var(--celtics-gold);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .register-link a:hover {
+            color: #d4a74a;
+            text-decoration: underline;
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+            border: 1px solid rgba(244, 67, 54, 0.2);
+            font-weight: 500;
+        }
+
+        .password-input {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .password-toggle:hover {
+            color: var(--celtics-gold);
+        }
+
+        .form-footer {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--celtics-gold);
+        }
+
+        .forgot-password {
+            color: var(--celtics-gold);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #d4a74a;
+            text-decoration: underline;
+        }
+        
+        /* Footer margin adjustment */
+        .footer {
+            margin-top: 80px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/">
+                    <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="logo-img">
+                </a>
+                <div class="nav-links">
+                    <a href="/#news" class="nav-link">News</a>
+                    <a href="/schedule" class="nav-link">Schedule</a>
+                    <a href="/roster" class="nav-link">Roster</a>
+                    <a href="/standings" class="nav-link">Standings</a>
+                    <a href="/getTickets" class="nav-link">Get Tickets</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <a href="/login" class="btn btn-outline">Login</a>
+                <a href="/register" class="btn btn-outline">Sign Up</a>
+                <a href="/#footer-contact" class="btn btn-outline">Contact</a>
+            </div>
+            <button class="mobile-menu-btn" aria-label="Toggle mobile menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1 class="auth-title"><i class="fas fa-user-circle"></i> Log In</h1>
+            <p class="auth-subtitle">Welcome back to the Celtics community</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="loginForm" class="auth-form">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-input">
+                    <input type="password" id="password" name="password" required>
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" title="Toggle password visibility">
+                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-footer">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                
+                <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+            
+            <br>
+            
+            <button type="submit" class="auth-btn"><i class="fas fa-sign-in-alt"></i> Log In</button>
+        </form>
+
+        <div class="register-link">
+            Don't have an account? <a href="/register">Sign up now</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="../images/backgrounds/logo2.svg" alt="Celtics Logo" class="footer-logo">
+                <p class="footer-description">The most successful team in NBA history, with 18 championships and counting.</p>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/bostonceltics/" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="https://www.instagram.com/celtics/?hl=en" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://x.com/celtics" target="_blank" rel="noopener noreferrer">
+                        <i class="fa-solid fa-x"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/#news">News</a></li>
+                    <li><a href="/schedule">Schedule</a></li>
+                    <li><a href="/roster">Roster</a></li>
+                    <li><a href="/standings">Standings</a></li>
+                    <li><a href="/getTickets">Tickets</a></li>
+                </ul>
+            </div>
+            <div class="footer-section" id="footer-contact">
+                <h4>Contact Us</h4>
+                <ul class="contact-info">
+                    <li>
+                        <i class="fas fa-user"></i>
+                        <span>Yoav Cohen</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-envelope"></i>
+                        <span>yoav23cohen@gmail.com</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-phone"></i>
+                        <span>+972 52-466-9882</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Herut, Israel</span>
+                    </li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/yoav-cohen-42b4272a5/" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-linkedin"></i>
+                            <span>LinkedIn Profile</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Newsletter</h4>
+                <p>Subscribe to get the latest Celtics news and updates.</p>
+                <div class="newsletter-form">
+                    <input type="email" placeholder="Enter your email">
+                    <button type="submit">Subscribe</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Boston Celtics. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        function showSuccessMessage(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+        
+        function showErrorMessage(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('passwordToggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        // Add event listener to form
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        
+        function getRedirectUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let redirectUrl = urlParams.get('redirect');
+            
+            if (!redirectUrl) {
+                redirectUrl = '/';
+            }
+            
+            return redirectUrl;
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+            
+            // Show loading state
+            const submitButton = document.querySelector('.auth-btn');
+            const originalText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            
+            // Set timeout to prevent UI from getting stuck if request takes too long
+            const timeout = setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                showError('Request is taking longer than expected. Please try again.');
+            }, 10000); // 10 second timeout
+            
+            const formData = {
+                email,
+                password
+            };
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+                
+                // Clear the timeout since we got a response
+                clearTimeout(timeout);
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+                
+                if (response.ok) {
+                    // Get redirect URL if any
+                    const redirectUrl = getRedirectUrl();
+                    
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1500);
+                } else {
+                    showError(data?.message || 'Login failed. Please check your credentials and try again.');
+                    // Reset button state
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            } catch (error) {
+                // Clear the timeout if there was an error
+                clearTimeout(timeout);
+                console.error('Login error:', error);
+                showError('An error occurred. Please try again later.');
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+        
+        // Check if user is already logged in
+        async function checkLoggedIn() {
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.isAuthenticated) {
+                    const redirectUrl = getRedirectUrl();
+                    window.location.href = redirectUrl;
+                }
+            } catch (error) {
+                console.error('Error checking login status:', error);
+            }
+        }
+        
+        // Check auth status when page loads
+        document.addEventListener('DOMContentLoaded', checkLoggedIn);
+    </script>
+    <script src="../js/navbar.js"></script>
+</body>
+</html> 
