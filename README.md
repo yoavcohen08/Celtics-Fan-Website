@@ -43,14 +43,11 @@ A comprehensive fan website for the **Boston Celtics**, featuring real-time game
 
 ---
 
-
-
 ## 👤 Contact
 
 **Developer**: Yoav Cohen  
 📧 **Email**: yoav23cohen@gmail.com  
 📍 **Location**: Herut, Israel  
-🔗 **LinkedIn**: [Yoav Cohen](https://www.linkedin.com/in/yoavcohen)
+🔗 **LinkedIn**: [Yoav Cohen](https://www.linkedin.com/in/yoav-cohen-42b4272a5)
 
----
 
